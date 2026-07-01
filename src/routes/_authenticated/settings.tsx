@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2, Bell, BellOff } from "lucide-react";
 import { currentFollowupPermission, requestFollowupPermission } from "@/hooks/use-followup-notifications";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
+import { encodeStoragePath, useSignedUrl } from "@/lib/signed-url";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — CoreEgin Sales OS" }] }),
@@ -50,6 +51,7 @@ function SettingsPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const avatarPreview = useSignedUrl("avatars", avatarUrl);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -98,11 +100,11 @@ function SettingsPage() {
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
-      const { data: signed } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-      const url = signed?.signedUrl ?? "";
-      const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
+      // Persist ONLY the storage path — signed URLs are minted fresh on each read (5-min TTL).
+      const stored = encodeStoragePath("avatars", path);
+      const { error } = await supabase.from("profiles").update({ avatar_url: stored }).eq("id", user.id);
       if (error) throw error;
-      setAvatarUrl(url);
+      setAvatarUrl(stored);
       toast.success("Avatar updated");
     } catch (e: any) { toast.error(e.message); } finally { setUploading(false); }
   }
@@ -142,7 +144,7 @@ function SettingsPage() {
           <div className="flex items-center gap-5">
             <div className="relative group">
               <div className="h-20 w-20 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-semibold shadow-[var(--shadow-glow)]" style={{ background: "var(--gradient-magenta)" }}>
-                {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : (name || user?.email || "?").slice(0, 1).toUpperCase()}
+                {avatarPreview ? <img src={avatarPreview} alt="" className="h-full w-full object-cover" /> : (name || user?.email || "?").slice(0, 1).toUpperCase()}
               </div>
               <button
                 type="button"

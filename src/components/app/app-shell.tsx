@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, S
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useChatUnread } from "@/hooks/use-chat-unread";
+import { useFollowupNotifications } from "@/hooks/use-followup-notifications";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
 const NAV = [
@@ -20,6 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const initials = (user?.email ?? "?").slice(0, 1).toUpperCase();
   const { total: unread } = useChatUnread();
   const [mobileOpen, setMobileOpen] = useState(false);
+  useFollowupNotifications();
 
   const navItems = (
     <>

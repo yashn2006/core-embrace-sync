@@ -6,7 +6,7 @@ import { StatCard } from "@/components/app/stat-card";
 import { useAuth } from "@/hooks/use-auth";
 import { listLeads, listProfiles, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, STAGE_LABEL, SOURCES, type StageKey } from "@/lib/constants";
-import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock } from "lucide-react";
+import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign } from "lucide-react";
 import { formatDistanceToNow, isPast, isToday, isTomorrow } from "date-fns";
 import { toast } from "sonner";
 
@@ -56,6 +56,14 @@ function DashboardPage() {
     return map;
   }, [leads]);
   const maxStage = Math.max(1, ...Object.values(stageCounts));
+
+  const stageValue = useMemo(() => {
+    const map: Record<string, number> = {};
+    STAGES.forEach((s) => (map[s.key] = 0));
+    leads.forEach((l) => (map[l.stage] = (map[l.stage] ?? 0) + (l.deal_value ?? 0)));
+    return map;
+  }, [leads]);
+  const maxStageValue = Math.max(1, ...Object.values(stageValue));
 
   const sourceCounts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -153,6 +161,30 @@ function DashboardPage() {
                   <div className="text-xs tabular text-primary font-medium">{r.rate}%</div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {isOwner && (
+          <div className="surface p-5 animate-reveal">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
+              <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Deal value by stage</div>
+            </div>
+            <div className="space-y-2.5">
+              {STAGES.filter((s) => s.key !== "lost").map((s, i) => {
+                const v = stageValue[s.key] ?? 0;
+                const pct = (v / maxStageValue) * 100;
+                return (
+                  <div key={s.key} className="grid grid-cols-[110px_1fr_90px] items-center gap-3">
+                    <div className="text-xs text-muted-foreground">{s.label}</div>
+                    <div className="h-7 rounded-lg bg-muted/60 relative overflow-hidden">
+                      <div className="h-full rounded-lg animate-reveal transition-all" style={{ width: `${pct}%`, background: s.key === "won" ? "var(--gradient-magenta)" : `oklch(0.9 0.06 340)`, animationDelay: `${i * 40}ms` }} />
+                    </div>
+                    <div className="text-xs text-right tabular font-medium">{formatCurrency(v)}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

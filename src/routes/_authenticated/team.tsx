@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, ShieldCheck, ShieldOff, Sparkles } from "lucide-react";
+import { UserPlus, ShieldCheck, ShieldOff, Sparkles, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminSetRole, adminDeactivateUser } from "@/lib/admin.functions";
 import { toast } from "sonner";
+import { BulkAssignDialog } from "@/components/leads/bulk-assign-dialog";
+import { listLeads, type Profile } from "@/lib/leads";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({ meta: [{ title: "Team — CoreEgin Sales OS" }] }),
@@ -37,6 +39,8 @@ function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [busy, setBusy] = useState(true);
   const [open, setOpen] = useState(false);
+  const [assign, setAssign] = useState<{ open: boolean; repId: string | null; repName: string | null }>({ open: false, repId: null, repName: null });
+  const [profiles, setProfiles] = useState<Profile[]>([]);
 
   async function refresh() {
     setBusy(true);
@@ -52,6 +56,7 @@ function TeamPage() {
         return { id: p.id, name: p.name, email: p.email, is_active: p.is_active, role: isOwner ? "owner" : "rep", leads_count: count };
       });
       setMembers(list.sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === "owner" ? -1 : 1)));
+      setProfiles((profs ?? []) as Profile[]);
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   }
   useEffect(() => { refresh(); }, []);
@@ -109,6 +114,11 @@ function TeamPage() {
                   <TableCell className="tabular">{m.leads_count}</TableCell>
                   <TableCell>{m.is_active ? <span className="text-xs text-success">Active</span> : <span className="text-xs text-muted-foreground">Deactivated</span>}</TableCell>
                   <TableCell className="text-right space-x-1">
+                    {m.role === "rep" && (
+                      <Button size="sm" variant="ghost" onClick={() => setAssign({ open: true, repId: m.id, repName: m.name })}>
+                        <UserCheck className="h-3.5 w-3.5 mr-1" />Assign leads
+                      </Button>
+                    )}
                     <Button size="sm" variant="ghost" onClick={() => toggleRole(m)}><ShieldCheck className="h-3.5 w-3.5 mr-1" />Make {m.role === "owner" ? "rep" : "owner"}</Button>
                     <Button size="sm" variant="ghost" className={m.is_active ? "text-destructive" : ""} onClick={() => toggleActive(m)}><ShieldOff className="h-3.5 w-3.5 mr-1" />{m.is_active ? "Deactivate" : "Reactivate"}</Button>
                   </TableCell>
@@ -119,12 +129,29 @@ function TeamPage() {
         </div>
       </div>
 
-      <CreateUserDialog open={open} onOpenChange={setOpen} onCreated={refresh} />
+      <CreateUserDialog
+        open={open}
+        onOpenChange={setOpen}
+        onCreated={(created) => {
+          refresh();
+          if (created?.role === "rep") {
+            setAssign({ open: true, repId: created.id, repName: created.name });
+          }
+        }}
+      />
+      <BulkAssignDialog
+        open={assign.open}
+        onOpenChange={(v) => setAssign((s) => ({ ...s, open: v }))}
+        profiles={profiles}
+        presetRepId={assign.repId}
+        presetRepName={assign.repName}
+        onDone={refresh}
+      />
     </>
   );
 }
 
-function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (v: boolean) => void; onCreated: () => void }) {
+function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (v: boolean) => void; onCreated: (created: { id: string; name: string; role: "owner" | "rep" } | null) => void }) {
   const createFn = useServerFn(adminCreateUser);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "rep" as "owner" | "rep" });
   const [saving, setSaving] = useState(false);
@@ -133,10 +160,11 @@ function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; on
     if (!form.name.trim() || !form.email.trim() || form.password.length < 8) { toast.error("Fill all fields (password ≥ 8 chars)"); return; }
     setSaving(true);
     try {
-      await createFn({ data: form });
+      const created = await createFn({ data: form });
       toast.success("User created — they can log in now");
+      const snapshot = { id: (created as any).id as string, name: form.name, role: form.role };
       setForm({ name: "", email: "", password: "", role: "rep" });
-      onOpenChange(false); onCreated();
+      onOpenChange(false); onCreated(snapshot);
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   }
 

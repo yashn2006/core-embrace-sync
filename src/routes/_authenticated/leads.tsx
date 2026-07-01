@@ -6,12 +6,13 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { Plus, Search, Trash2, Upload, X, UserCheck, Sparkles } from "lucide-react";
 import { listLeads, listProfiles, deleteLead, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, type StageKey } from "@/lib/constants";
 import { LeadDialog } from "@/components/leads/lead-dialog";
 import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet";
 import { CsvImportDialog } from "@/components/leads/csv-import-dialog";
+import { BulkAssignDialog } from "@/components/leads/bulk-assign-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +42,7 @@ function LeadsPage() {
   const [dialog, setDialog] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
   const [detail, setDetail] = useState<Lead | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const setSearch = (patch: Partial<{ q: string; stage: string; owner: string }>) =>
     navigate({ search: (prev: { q: string; stage: string; owner: string }) => ({ ...prev, ...patch }), replace: true });
@@ -66,6 +68,7 @@ function LeadsPage() {
   }, [leads, search]);
 
   const activeFilters = (search.stage !== "all" ? 1 : 0) + (search.owner !== "all" ? 1 : 0) + (search.q ? 1 : 0);
+  const unassignedCount = useMemo(() => leads.filter((l) => !l.assigned_to).length, [leads]);
 
   const nameOf = (id: string | null) => profiles.find((p) => p.id === id)?.name ?? "—";
 
@@ -81,6 +84,11 @@ function LeadsPage() {
         description={isOwner ? "Every lead in the org. Assign, edit, work them." : "Your leads. Add, work, close."}
         actions={
           <div className="flex items-center gap-2">
+            {isOwner && (
+              <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
+                <UserCheck className="h-4 w-4 mr-1.5" />Assign to rep
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
               <Upload className="h-4 w-4 mr-1.5" />Import CSV/Excel
             </Button>
@@ -91,6 +99,19 @@ function LeadsPage() {
         }
       />
       <div className="p-6 md:p-8 space-y-4">
+        {isOwner && unassignedCount > 0 && (
+          <div className="surface p-3 flex items-center gap-3 animate-fade-in">
+            <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--gradient-magenta)" }}>
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1 text-sm">
+              <b className="tabular">{unassignedCount}</b> unassigned lead{unassignedCount === 1 ? "" : "s"} waiting to be handed to a rep.
+              <span className="text-muted-foreground"> Bulk-assign them so they show up in a rep's pipeline.</span>
+            </div>
+            <Button size="sm" onClick={() => setAssignOpen(true)}>Assign now</Button>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -181,6 +202,7 @@ function LeadsPage() {
         onChanged={() => { refresh(); if (detail) listLeads().then((l) => setDetail(l.find((x) => x.id === detail.id) ?? null)); }}
       />
       <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} profiles={profiles} onDone={refresh} />
+      {isOwner && <BulkAssignDialog open={assignOpen} onOpenChange={setAssignOpen} profiles={profiles.filter((p) => p.id)} onDone={refresh} />}
     </>
   );
 }

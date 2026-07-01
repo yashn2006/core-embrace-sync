@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
+import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedLeadLogsRouteImport } from './routes/_authenticated/lead-logs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -49,6 +50,11 @@ const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
   path: '/pipeline',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeetingsRoute = AuthenticatedMeetingsRouteImport.update({
+  id: '/meetings',
+  path: '/meetings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/meetings': typeof AuthenticatedMeetingsRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/meetings': typeof AuthenticatedMeetingsRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
+  '/_authenticated/meetings': typeof AuthenticatedMeetingsRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lead-logs'
     | '/leads'
+    | '/meetings'
     | '/pipeline'
     | '/settings'
     | '/team'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lead-logs'
     | '/leads'
+    | '/meetings'
     | '/pipeline'
     | '/settings'
     | '/team'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/lead-logs'
     | '/_authenticated/leads'
+    | '/_authenticated/meetings'
     | '/_authenticated/pipeline'
     | '/_authenticated/settings'
     | '/_authenticated/team'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPipelineRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/meetings': {
+      id: '/_authenticated/meetings'
+      path: '/meetings'
+      fullPath: '/meetings'
+      preLoaderRoute: typeof AuthenticatedMeetingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/leads': {
       id: '/_authenticated/leads'
       path: '/leads'
@@ -228,6 +247,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLeadLogsRoute: typeof AuthenticatedLeadLogsRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
+  AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
@@ -238,6 +258,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLeadLogsRoute: AuthenticatedLeadLogsRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
+  AuthenticatedMeetingsRoute: AuthenticatedMeetingsRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,

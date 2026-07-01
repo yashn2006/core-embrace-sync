@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare } from "lucide-react";
+import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useChatUnread } from "@/hooks/use-chat-unread";
@@ -11,6 +11,7 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leads", label: "Leads", icon: Users },
   { to: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+  { to: "/meetings", label: "Meetings", icon: Video },
   { to: "/lead-logs", label: "Lead logs", icon: MessagesSquare },
   { to: "/chat", label: "Chat", icon: MessageSquare },
 ] as const;

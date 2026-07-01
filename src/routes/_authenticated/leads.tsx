@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Trash2, Upload, X, UserCheck, Sparkles } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 import { listLeads, listProfiles, deleteLead, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, STAGE_ACCENT, type StageKey } from "@/lib/constants";
 import { LeadDialog } from "@/components/leads/lead-dialog";
@@ -43,6 +45,9 @@ function LeadsPage() {
   const [detail, setDetail] = useState<Lead | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAssignee, setBulkAssignee] = useState<string>("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const setSearch = (patch: Partial<{ q: string; stage: string; owner: string }>) =>
     navigate({ search: (prev: { q: string; stage: string; owner: string }) => ({ ...prev, ...patch }), replace: true });
@@ -75,6 +80,43 @@ function LeadsPage() {
   async function handleDelete(l: Lead) {
     if (!confirm(`Delete "${l.name}"?`)) return;
     try { await deleteLead(l.id); toast.success("Deleted"); refresh(); } catch (e: any) { toast.error(e.message); }
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  const allChecked = filtered.length > 0 && filtered.every((l) => selected.has(l.id));
+  function toggleAll() {
+    if (allChecked) setSelected(new Set());
+    else setSelected(new Set(filtered.map((l) => l.id)));
+  }
+
+  async function bulkReassign() {
+    if (!bulkAssignee || selected.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("leads").update({ assigned_to: bulkAssignee }).in("id", ids);
+      if (error) throw error;
+      toast.success(`Reassigned ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${nameOf(bulkAssignee)}`);
+      setSelected(new Set()); setBulkAssignee(""); refresh();
+    } catch (e: any) { toast.error(e.message); } finally { setBulkBusy(false); }
+  }
+  async function bulkDelete() {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} lead${selected.size === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("leads").delete().in("id", ids);
+      if (error) throw error;
+      toast.success(`Deleted ${ids.length} lead${ids.length === 1 ? "" : "s"}`);
+      setSelected(new Set()); refresh();
+    } catch (e: any) { toast.error(e.message); } finally { setBulkBusy(false); }
   }
 
   return (
@@ -141,10 +183,37 @@ function LeadsPage() {
           <div className="ml-auto text-xs text-muted-foreground tabular whitespace-nowrap">{filtered.length} of {leads.length}</div>
         </div>
 
+        {isOwner && selected.size > 0 && (
+          <div className="surface p-3 flex flex-wrap items-center gap-2 animate-fade-in border-primary/40 ring-1 ring-primary/20">
+            <Badge className="bg-primary/15 text-primary hover:bg-primary/15 border-0">{selected.size} selected</Badge>
+            <span className="text-xs text-muted-foreground">Reassign to</span>
+            <Select value={bulkAssignee} onValueChange={setBulkAssignee}>
+              <SelectTrigger className="h-8 w-[180px]"><SelectValue placeholder="Pick a rep" /></SelectTrigger>
+              <SelectContent>
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={bulkReassign} disabled={!bulkAssignee || bulkBusy}>
+              <UserCheck className="h-3.5 w-3.5 mr-1.5" />Reassign
+            </Button>
+            <Button size="sm" variant="destructive" onClick={bulkDelete} disabled={bulkBusy}>
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="ml-auto">
+              <X className="h-3.5 w-3.5 mr-1" />Clear
+            </Button>
+          </div>
+        )}
+
         <div className="surface overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
+                {isOwner && (
+                  <TableHead className="w-8">
+                    <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
+                  </TableHead>
+                )}
                 <TableHead>Lead</TableHead>
                 <TableHead>Stage</TableHead>
                 <TableHead>Value</TableHead>
@@ -156,15 +225,20 @@ function LeadsPage() {
             </TableHeader>
             <TableBody>
               {loading && (
-                <TableRow><TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isOwner ? 8 : 7} className="py-8 text-center text-sm text-muted-foreground">Loading…</TableCell></TableRow>
               )}
               {!loading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                <TableRow><TableCell colSpan={isOwner ? 8 : 7} className="py-12 text-center text-sm text-muted-foreground">
                   No leads yet. Click <b>New lead</b> to get started.
                 </TableCell></TableRow>
               )}
               {filtered.map((l) => (
-                <TableRow key={l.id} className="cursor-pointer group" onClick={() => setDetail(l)}>
+                <TableRow key={l.id} className={"cursor-pointer group " + (selected.has(l.id) ? "bg-primary/5" : "")} onClick={() => setDetail(l)}>
+                  {isOwner && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={selected.has(l.id)} onCheckedChange={() => toggleOne(l.id)} />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="font-medium">{l.name}</div>
                     <div className="text-xs text-muted-foreground">{l.company ?? l.email ?? l.phone ?? "—"}</div>

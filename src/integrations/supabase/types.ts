@@ -139,6 +139,7 @@ export type Database = {
           next_follow_up: string | null
           org_id: string
           phone: string | null
+          progress: number
           source: Database["public"]["Enums"]["lead_source"]
           stage: Database["public"]["Enums"]["lead_stage"]
           updated_at: string
@@ -161,6 +162,7 @@ export type Database = {
           next_follow_up?: string | null
           org_id: string
           phone?: string | null
+          progress?: number
           source?: Database["public"]["Enums"]["lead_source"]
           stage?: Database["public"]["Enums"]["lead_stage"]
           updated_at?: string
@@ -183,6 +185,7 @@ export type Database = {
           next_follow_up?: string | null
           org_id?: string
           phone?: string | null
+          progress?: number
           source?: Database["public"]["Enums"]["lead_source"]
           stage?: Database["public"]["Enums"]["lead_stage"]
           updated_at?: string

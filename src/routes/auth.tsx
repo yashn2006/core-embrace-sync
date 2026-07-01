@@ -20,7 +20,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { session, loading, user } = useAuth();
+  const { session, loading, user, displayName } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -83,7 +83,7 @@ function AuthPage() {
           {alreadySignedIn ? (
             <div className="surface-raised p-6 rounded-2xl text-center space-y-4">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Session detected</div>
-              <h1 className="text-2xl font-semibold tracking-tight">Welcome back{user?.email ? "," : ""}<br /><span className="text-gradient">{user?.email}</span></h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Welcome back,<br /><span className="text-gradient">{displayName}</span></h1>
               <p className="text-sm text-muted-foreground">You're already signed in. Continue when ready.</p>
               <Button
                 className="w-full sheen-on-hover text-white shadow-[var(--shadow-glow)]"

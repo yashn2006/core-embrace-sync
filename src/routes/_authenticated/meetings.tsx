@@ -8,13 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Plus, Calendar, Clock, Users2, ExternalLink, X, Copy } from "lucide-react";
+import { Video, Plus, Calendar, Clock, Users2, X, Copy, CalendarPlus, Pencil, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
-import { scheduleMeeting, cancelMeeting } from "@/lib/meetings.functions";
+import { scheduleMeeting, cancelMeeting, updateMeeting, completeMeeting } from "@/lib/meetings.functions";
 import { toast } from "sonner";
 import { MeetingRoom } from "@/components/meetings/meeting-room";
+import { downloadIcs } from "@/lib/ics";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   head: () => ({ meta: [{ title: "Meetings — CoreEgin Sales OS" }] }),
@@ -45,15 +46,19 @@ function toLocalInput(d: Date) {
 }
 
 function MeetingsPage() {
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const [meetings, setMeetings] = useState<MeetingRow[]>([]);
   const [profiles, setProfiles] = useState<Prof[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [joining, setJoining] = useState<MeetingRow | null>(null);
+  const [rescheduling, setRescheduling] = useState<MeetingRow | null>(null);
+  const [completing, setCompleting] = useState<MeetingRow | null>(null);
   const scheduleFn = useServerFn(scheduleMeeting);
   const cancelFn = useServerFn(cancelMeeting);
+  const updateFn = useServerFn(updateMeeting);
+  const completeFn = useServerFn(completeMeeting);
 
   async function refresh() {
     setLoading(true);
@@ -151,7 +156,15 @@ function MeetingsPage() {
           ) : (
             <div className="grid gap-3">
               {upcoming.map((m) => (
-                <MeetingCard key={m.id} m={m} currentUserId={user?.id ?? ""} onJoin={() => setJoining(m)} onCancel={() => onCancel(m.id)} />
+              <MeetingCard
+                key={m.id}
+                m={m}
+                currentUserId={user?.id ?? ""}
+                onJoin={() => setJoining(m)}
+                onCancel={() => onCancel(m.id)}
+                onReschedule={() => setRescheduling(m)}
+                onIcs={() => downloadFor(m)}
+              />
               ))}
             </div>
           )}
@@ -162,7 +175,17 @@ function MeetingsPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">Past</h2>
             <div className="grid gap-3">
               {past.map((m) => (
-                <MeetingCard key={m.id} m={m} currentUserId={user?.id ?? ""} onJoin={() => setJoining(m)} onCancel={() => onCancel(m.id)} isPast />
+              <MeetingCard
+                key={m.id}
+                m={m}
+                currentUserId={user?.id ?? ""}
+                onJoin={() => setJoining(m)}
+                onCancel={() => onCancel(m.id)}
+                onReschedule={() => setRescheduling(m)}
+                onIcs={() => downloadFor(m)}
+                onComplete={m.status !== "cancelled" && m.status !== "completed" ? () => setCompleting(m) : undefined}
+                isPast
+              />
               ))}
             </div>
           </section>
@@ -187,13 +210,61 @@ function MeetingsPage() {
       />
 
       {joining && (
-        <MeetingRoom meeting={joining} userName={user?.email?.split("@")[0] ?? "Guest"} onLeave={() => setJoining(null)} />
+        <MeetingRoom meeting={joining} userName={displayName} onLeave={() => setJoining(null)} />
       )}
+
+      <RescheduleDialog
+        meeting={rescheduling}
+        onClose={() => setRescheduling(null)}
+        onSubmit={async (payload) => {
+          try {
+            await updateFn({ data: payload });
+            toast.success("Meeting updated — attendees notified");
+            setRescheduling(null);
+            refresh();
+          } catch (e: any) { toast.error(e?.message ?? "Failed to update"); }
+        }}
+      />
+
+      <CompleteDialog
+        meeting={completing}
+        onClose={() => setCompleting(null)}
+        onSubmit={async (payload) => {
+          try {
+            await completeFn({ data: payload });
+            toast.success("Meeting notes saved to lead timeline");
+            setCompleting(null);
+            refresh();
+          } catch (e: any) { toast.error(e?.message ?? "Failed to save"); }
+        }}
+      />
     </div>
   );
+
+  function downloadFor(m: MeetingRow) {
+    downloadIcs({
+      uid: m.id,
+      title: m.title,
+      description: [m.description, m.daily_room_url ? `Join: ${m.daily_room_url}` : null].filter(Boolean).join("\n\n"),
+      location: m.daily_room_url ?? undefined,
+      startISO: m.start_at,
+      endISO: m.end_at,
+      url: m.daily_room_url,
+    });
+    toast.success("Calendar file downloaded");
+  }
 }
 
-function MeetingCard({ m, currentUserId, onJoin, onCancel, isPast }: { m: MeetingRow; currentUserId: string; onJoin: () => void; onCancel: () => void; isPast?: boolean }) {
+function MeetingCard({ m, currentUserId, onJoin, onCancel, onReschedule, onIcs, onComplete, isPast }: {
+  m: MeetingRow;
+  currentUserId: string;
+  onJoin: () => void;
+  onCancel: () => void;
+  onReschedule: () => void;
+  onIcs: () => void;
+  onComplete?: () => void;
+  isPast?: boolean;
+}) {
   const start = new Date(m.start_at);
   const end = new Date(m.end_at);
   const now = Date.now();
@@ -238,19 +309,34 @@ function MeetingCard({ m, currentUserId, onJoin, onCancel, isPast }: { m: Meetin
               <Video className="h-3.5 w-3.5" /> {canJoin ? "Join" : "Not yet"}
             </Button>
           )}
-          {m.daily_room_url && (
-            <button
-              onClick={() => { navigator.clipboard.writeText(m.daily_room_url!); toast.success("Link copied"); }}
-              className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-            >
-              <Copy className="h-3 w-3" /> Copy link
+          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+            {m.daily_room_url && (
+              <button
+                onClick={() => { navigator.clipboard.writeText(m.daily_room_url!); toast.success("Link copied"); }}
+                className="hover:text-foreground inline-flex items-center gap-1"
+              >
+                <Copy className="h-3 w-3" /> Copy
+              </button>
+            )}
+            <button onClick={onIcs} className="hover:text-foreground inline-flex items-center gap-1">
+              <CalendarPlus className="h-3 w-3" /> .ics
             </button>
-          )}
-          {isHost && m.status !== "cancelled" && !isPast && (
-            <button onClick={onCancel} className="text-[11px] text-muted-foreground hover:text-destructive inline-flex items-center gap-1">
-              <X className="h-3 w-3" /> Cancel
-            </button>
-          )}
+            {isHost && m.status !== "cancelled" && (
+              <button onClick={onReschedule} className="hover:text-foreground inline-flex items-center gap-1">
+                <Pencil className="h-3 w-3" /> Edit
+              </button>
+            )}
+            {isHost && m.status !== "cancelled" && !isPast && (
+              <button onClick={onCancel} className="hover:text-destructive inline-flex items-center gap-1">
+                <X className="h-3 w-3" /> Cancel
+              </button>
+            )}
+            {onComplete && (
+              <button onClick={onComplete} className="hover:text-primary inline-flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Notes
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -374,6 +460,141 @@ function ScheduleDialog({ open, onOpenChange, profiles, leads, onSubmit }: {
           <Button onClick={submit} disabled={saving} style={{ background: "var(--gradient-magenta)" }}>
             {saving ? "Creating room…" : "Schedule & create room"}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RescheduleDialog({ meeting, onClose, onSubmit }: {
+  meeting: MeetingRow | null;
+  onClose: () => void;
+  onSubmit: (p: { meeting_id: string; title: string; description: string | null; start_at: string; end_at: string }) => Promise<void>;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [start, setStart] = useState("");
+  const [duration, setDuration] = useState("30");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!meeting) return;
+    setTitle(meeting.title);
+    setDescription(meeting.description ?? "");
+    setStart(toLocalInput(new Date(meeting.start_at)));
+    const mins = Math.max(15, Math.round((new Date(meeting.end_at).getTime() - new Date(meeting.start_at).getTime()) / 60_000));
+    setDuration(String(mins));
+  }, [meeting]);
+
+  async function submit() {
+    if (!meeting) return;
+    const startDate = new Date(start);
+    const endDate = new Date(startDate.getTime() + parseInt(duration, 10) * 60_000);
+    setSaving(true);
+    try {
+      await onSubmit({
+        meeting_id: meeting.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        start_at: startDate.toISOString(),
+        end_at: endDate.toISOString(),
+      });
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={!!meeting} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> Reschedule meeting</DialogTitle>
+          <DialogDescription>All attendees are notified live and the video room stays valid.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <div><Label>Notes</Label><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Starts</Label><Input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+            <div>
+              <Label>Duration</Label>
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["15","30","45","60","90","120"].map((d) => <SelectItem key={d} value={d}>{d} min</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} style={{ background: "var(--gradient-magenta)" }}>{saving ? "Saving…" : "Save changes"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CompleteDialog({ meeting, onClose, onSubmit }: {
+  meeting: MeetingRow | null;
+  onClose: () => void;
+  onSubmit: (p: { meeting_id: string; outcome: "completed" | "won" | "lost" | "no_show" | "follow_up"; notes: string; next_step_at?: string | null; next_step_note?: string | null }) => Promise<void>;
+}) {
+  const [outcome, setOutcome] = useState<"completed" | "won" | "lost" | "no_show" | "follow_up">("completed");
+  const [notes, setNotes] = useState("");
+  const [nextAt, setNextAt] = useState("");
+  const [nextNote, setNextNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (meeting) { setOutcome("completed"); setNotes(""); setNextAt(""); setNextNote(""); } }, [meeting]);
+
+  async function submit() {
+    if (!meeting) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        meeting_id: meeting.id,
+        outcome,
+        notes: notes.trim(),
+        next_step_at: nextAt ? new Date(nextAt).toISOString() : null,
+        next_step_note: nextNote.trim() || null,
+      });
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={!!meeting} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Post-meeting notes</DialogTitle>
+          <DialogDescription>Saved to the linked lead's activity timeline instantly.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Outcome</Label>
+            <Select value={outcome} onValueChange={(v) => setOutcome(v as typeof outcome)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="won">Won — deal closed</SelectItem>
+                <SelectItem value="lost">Lost — no deal</SelectItem>
+                <SelectItem value="follow_up">Follow-up needed</SelectItem>
+                <SelectItem value="no_show">No-show</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>What was discussed?</Label>
+            <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Key points, decisions, blockers, action items…" autoFocus />
+          </div>
+          <div className="rounded-lg border border-hairline p-3 space-y-2 bg-muted/30">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Next step (optional)</Label>
+            <Input type="datetime-local" value={nextAt} onChange={(e) => setNextAt(e.target.value)} />
+            <Input placeholder="e.g. Send proposal deck" value={nextNote} onChange={(e) => setNextNote(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving || !notes.trim()} style={{ background: "var(--gradient-magenta)" }}>{saving ? "Saving…" : "Save to timeline"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

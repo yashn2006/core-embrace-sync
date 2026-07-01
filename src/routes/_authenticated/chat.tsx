@@ -7,10 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { listProfiles, type Profile } from "@/lib/leads";
 import { DEFAULT_ORG_ID } from "@/lib/constants";
-import { Send, Hash, Users } from "lucide-react";
+import { Send, Hash, Users, Paperclip, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { markChatSeen } from "@/hooks/use-chat-unread";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 
@@ -25,9 +26,15 @@ function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [channel, setChannel] = useState<{ type: "team" } | { type: "direct"; peerId: string }>({ type: "team" });
   const [input, setInput] = useState("");
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { listProfiles().then(setProfiles).catch((e) => toast.error(e.message)); }, []);
+
+  // mark chat viewed whenever this page is mounted / channel changes / messages arrive
+  useEffect(() => { markChatSeen(); }, [channel, messages.length]);
 
   // Fetch + subscribe
   useEffect(() => {
@@ -63,17 +70,31 @@ function ChatPage() {
 
   async function send() {
     const content = input.trim();
-    if (!content || !user) return;
+    if ((!content && !pendingImage) || !user) return;
+    setUploading(true);
+    let imageUrl: string | null = null;
+    if (pendingImage) {
+      const ext = pendingImage.name.split(".").pop() || "png";
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("chat-attachments").upload(path, pendingImage);
+      if (upErr) { toast.error(upErr.message); setUploading(false); return; }
+      const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrl(path, 60 * 60 * 24 * 365);
+      imageUrl = signed?.signedUrl ?? null;
+    }
     setInput("");
+    setPendingImage(null);
+    if (fileRef.current) fileRef.current.value = "";
     const row: any = {
       org_id: DEFAULT_ORG_ID,
       channel_type: channel.type,
       sender_id: user.id,
-      content,
+      content: content || (imageUrl ? "📷 Image" : ""),
+      image_url: imageUrl,
       recipient_id: channel.type === "direct" ? channel.peerId : null,
     };
     const { error } = await supabase.from("messages").insert(row);
     if (error) { toast.error(error.message); setInput(content); }
+    setUploading(false);
   }
 
   const peers = useMemo(() => profiles.filter((p) => p.id !== user?.id), [profiles, user?.id]);
@@ -123,7 +144,12 @@ function ChatPage() {
                         {mine ? "You" : nameOf(m.sender_id)} · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                       </div>
                       <div className={"inline-block rounded-2xl px-3.5 py-2 text-sm " + (mine ? "text-white" : "bg-muted text-foreground")} style={mine ? { background: "var(--gradient-magenta)" } : undefined}>
-                        {m.content}
+                        {(m as any).image_url && (
+                          <a href={(m as any).image_url} target="_blank" rel="noreferrer" className="block mb-1">
+                            <img src={(m as any).image_url} alt="attachment" className="rounded-lg max-h-64 max-w-full object-cover" />
+                          </a>
+                        )}
+                        {m.content && <div>{m.content}</div>}
                       </div>
                     </div>
                   </div>
@@ -131,9 +157,37 @@ function ChatPage() {
               })}
               <div ref={bottomRef} />
             </div>
-            <div className="border-t border-hairline p-3 flex items-center gap-2">
-              <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Type a message…" />
-              <Button size="icon" onClick={send} disabled={!input.trim()}><Send className="h-4 w-4" /></Button>
+            <div className="border-t border-hairline p-3 space-y-2">
+              {pendingImage && (
+                <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-lg px-2 py-1.5">
+                  <Paperclip className="h-3 w-3 text-primary" />
+                  <span className="truncate flex-1">{pendingImage.name}</span>
+                  <button onClick={() => { setPendingImage(null); if (fileRef.current) fileRef.current.value = ""; }} className="text-muted-foreground hover:text-foreground">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Button size="icon" variant="ghost" onClick={() => fileRef.current?.click()} title="Attach image">
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
+                    setPendingImage(f);
+                  }}
+                />
+                <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !uploading && send()} placeholder="Type a message…" disabled={uploading} />
+                <Button size="icon" onClick={send} disabled={uploading || (!input.trim() && !pendingImage)}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </section>
         </div>

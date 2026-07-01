@@ -166,7 +166,7 @@ export const updateMeeting = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: before, error: bErr } = await supabase
       .from("meetings")
-      .select("id,title,start_at,end_at,lead_id")
+      .select("id,title,start_at,end_at,lead_id,daily_room_name")
       .eq("id", data.meeting_id)
       .single();
     if (bErr) throw new Error(bErr.message);
@@ -181,6 +181,22 @@ export const updateMeeting = createServerFn({ method: "POST" })
 
     const { error: uErr } = await supabase.from("meetings").update(patch).eq("id", data.meeting_id);
     if (uErr) throw new Error(uErr.message);
+
+    // If time changed, extend Daily room expiration (4h after new end_at)
+    const newEnd = data.end_at ?? before.end_at;
+    if ((data.start_at || data.end_at) && before.daily_room_name && process.env.DAILY_API_KEY) {
+      try {
+        const expUnix = Math.floor(new Date(newEnd).getTime() / 1000) + 4 * 60 * 60;
+        await fetch(`https://api.daily.co/v1/rooms/${before.daily_room_name}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ properties: { exp: expUnix } }),
+        });
+      } catch (e) { console.error("daily update", e); }
+    }
 
     if (before.lead_id) {
       const rescheduled = data.start_at && data.start_at !== before.start_at;
@@ -208,6 +224,71 @@ export const updateMeeting = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Complete a meeting: record post-call notes + outcome, log to lead timeline,
+ * optionally schedule a next-step follow-up.
+ */
+export const completeMeeting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: {
+    meeting_id: string;
+    outcome: "completed" | "won" | "lost" | "no_show" | "follow_up";
+    notes: string;
+    next_step_at?: string | null;
+    next_step_note?: string | null;
+  }) => {
+    if (!data.meeting_id) throw new Error("meeting_id required");
+    if (!data.notes?.trim()) throw new Error("Notes required");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: meeting, error } = await supabase
+      .from("meetings")
+      .select("id,title,lead_id")
+      .eq("id", data.meeting_id)
+      .single();
+    if (error) throw new Error(error.message);
+
+    const { error: upErr } = await supabase
+      .from("meetings")
+      .update({ status: "completed" })
+      .eq("id", data.meeting_id);
+    if (upErr) throw new Error(upErr.message);
+
+    if (meeting.lead_id) {
+      await logMeetingActivity(supabase, {
+        lead_id: meeting.lead_id,
+        outcome: data.outcome,
+        note: `Meeting "${meeting.title}" — ${data.outcome.toUpperCase()}\n${data.notes.trim()}`,
+        userId,
+      });
+
+      // Mirror lead stage on win/loss
+      if (data.outcome === "won" || data.outcome === "lost") {
+        try {
+          await supabase.from("leads").update({ stage: data.outcome }).eq("id", meeting.lead_id);
+        } catch (e) { console.error("stage sync", e); }
+      }
+
+      // Log next step as a separate follow-up activity
+      if (data.next_step_at) {
+        try {
+          await supabase.from("activities").insert({
+            lead_id: meeting.lead_id,
+            org_id: ORG_ID,
+            type: "follow_up",
+            outcome: "scheduled",
+            response_text: data.next_step_note?.trim() || `Next step scheduled after meeting`,
+            follow_up_at: data.next_step_at,
+            created_by: userId,
+          });
+        } catch (e) { console.error("next-step insert", e); }
+      }
+    }
+
+    return { ok: true };
+  });
 /**
  * Cancel a meeting (soft: mark status='cancelled' and delete Daily room).
  */

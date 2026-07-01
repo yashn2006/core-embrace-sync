@@ -40,7 +40,7 @@ function ChatPage() {
   const [uploading, setUploading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { team: unreadTeam, dm: unreadDm } = useChatUnread();
 
   useEffect(() => {
@@ -83,7 +83,14 @@ function ChatPage() {
     return () => { supabase.removeChannel(ch); };
   }, [user, channel]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // Scroll ONLY the messages container to the bottom — never the window.
+  // scrollIntoView() bubbles to every ancestor scroll container and yanks
+  // the whole page down when switching channels on mobile/desktop.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, channel]);
 
   async function send() {
     const content = input.trim();
@@ -212,7 +219,7 @@ function ChatPage() {
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 space-y-3">
               {messages.length === 0 && <div className="text-center text-sm text-muted-foreground py-12">No messages yet. Say hi 👋</div>}
               {messages.map((m) => {
                 const mine = m.sender_id === user?.id;
@@ -260,7 +267,6 @@ function ChatPage() {
                   </div>
                 );
               })}
-              <div ref={bottomRef} />
             </div>
 
             <div className="border-t border-hairline p-2 md:p-3 space-y-2 shrink-0">

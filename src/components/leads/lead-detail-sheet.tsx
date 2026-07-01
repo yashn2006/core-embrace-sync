@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Trophy, XCircle, Pencil, Building2, Mail, Phone, Calendar, User, Tag, Check } from "lucide-react";
-import { formatCurrency, updateLead, updateLeadCustomStatus, type Lead, type Profile } from "@/lib/leads";
+import { formatCurrency, updateLead, updateLeadCustomStatus, updateLeadProgress, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, STAGE_ACCENT, type StageKey } from "@/lib/constants";
 import { ActivityTimeline } from "./activity-timeline";
 import { LeadChatPanel } from "./lead-chat-panel";
@@ -34,9 +34,11 @@ export function LeadDetailSheet({
   const [lostOpen, setLostOpen] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [savingStatus, setSavingStatus] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
 
   if (!lead) return null;
   const currentStatus = (lead as any).custom_status ?? "";
+  const currentProgress = (lead as any).progress ?? 0;
   const owner = profiles.find((p) => p.id === lead.assigned_to);
   const creator = profiles.find((p) => p.id === lead.created_by);
   const stageAccent = STAGE_ACCENT[lead.stage as StageKey];
@@ -52,6 +54,15 @@ export function LeadDetailSheet({
       onChanged();
     } catch (e: any) { toast.error(e.message); }
     setSavingStatus(false);
+  }
+
+  async function saveProgress(next: number) {
+    try {
+      await updateLeadProgress(lead!.id, next);
+      await logActivity({ lead_id: lead!.id, type: "note", outcome: `progress → ${next}%`, created_by: user!.id });
+      toast.success(`Progress ${next}%`);
+      onChanged();
+    } catch (e: any) { toast.error(e.message); }
   }
 
   async function moveStage(next: StageKey) {

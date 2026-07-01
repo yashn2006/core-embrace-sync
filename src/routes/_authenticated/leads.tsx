@@ -82,7 +82,7 @@ function LeadsPage() {
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
-              <Upload className="h-4 w-4 mr-1.5" />Import CSV
+              <Upload className="h-4 w-4 mr-1.5" />Import CSV/Excel
             </Button>
             <Button size="sm" onClick={() => setDialog({ open: true, lead: null })}>
               <Plus className="h-4 w-4 mr-1.5" />New lead

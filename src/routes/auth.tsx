@@ -41,31 +41,26 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden">
-      {/* Ambient magenta glow — subtle */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(600px circle at 50% -10%, color-mix(in oklab, var(--magenta) 14%, transparent), transparent 60%)",
-        }}
-      />
-      <div className="relative w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden bg-background">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-aurora" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-30 [mask-image:radial-gradient(600px_circle_at_50%_40%,black,transparent)]" />
+      <div className="relative w-full max-w-sm animate-reveal">
         <div className="mb-10 flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
-            <span className="text-primary text-sm font-bold">C</span>
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-[var(--shadow-glow)]" style={{ background: "var(--gradient-magenta)" }}>
+            C
           </div>
           <div>
             <div className="text-sm font-semibold tracking-tight">CoreEgin</div>
-            <div className="text-xs text-muted-foreground -mt-0.5">Sales OS</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] -mt-0.5">Sales OS</div>
           </div>
         </div>
 
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">Sign in with your CoreEgin account.</p>
+        <h1 className="text-[28px] font-semibold tracking-tight leading-tight">
+          Welcome <span className="text-gradient">back</span>
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your CoreEgin workspace.</p>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <form onSubmit={onSubmit} className="mt-8 space-y-4 surface-raised p-6 rounded-2xl">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -89,7 +84,7 @@ function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button type="submit" className="w-full sheen-on-hover text-white shadow-[var(--shadow-glow)]" style={{ background: "var(--gradient-magenta)" }} disabled={submitting}>
             {submitting ? "Signing in…" : "Sign in"}
           </Button>
         </form>

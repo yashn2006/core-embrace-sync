@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, EyeOff } from "lucide-react";
+import { Plus, Eye, EyeOff, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { listLeads, listProfiles, updateLead, logActivity, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, ACTIVE_STAGES, STAGE_ACCENT, STAGE_LABEL, type StageKey } from "@/lib/constants";
@@ -28,6 +29,7 @@ function PipelinePage() {
   const [pendingWon, setPendingWon] = useState<Lead | null>(null);
   const [pendingLost, setPendingLost] = useState<Lead | null>(null);
   const [showClosed, setShowClosed] = useState(false);
+  const [repFilter, setRepFilter] = useState<string>("all"); // owner-only: 'all' | 'unassigned' | <userId>
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   async function refresh() {
@@ -38,11 +40,28 @@ function PipelinePage() {
   }
   useEffect(() => { refresh(); }, []);
 
+  const filteredLeads = useMemo(() => {
+    if (!isOwner || repFilter === "all") return leads;
+    if (repFilter === "unassigned") return leads.filter((l) => !l.assigned_to);
+    return leads.filter((l) => l.assigned_to === repFilter);
+  }, [leads, isOwner, repFilter]);
+
   const grouped = useMemo(() => {
     const map = new Map<StageKey, Lead[]>();
     STAGES.forEach((s) => map.set(s.key, []));
-    leads.forEach((l) => map.get(l.stage as StageKey)?.push(l));
+    filteredLeads.forEach((l) => map.get(l.stage as StageKey)?.push(l));
     return map;
+  }, [filteredLeads]);
+
+  const reps = useMemo(() => profiles.filter((p) => p.is_active !== false), [profiles]);
+  const repCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    let unassigned = 0;
+    leads.forEach((l) => {
+      if (!l.assigned_to) unassigned++;
+      else m.set(l.assigned_to, (m.get(l.assigned_to) ?? 0) + 1);
+    });
+    return { m, unassigned };
   }, [leads]);
 
   const visibleStages = showClosed ? STAGES : ACTIVE_STAGES;
@@ -80,6 +99,23 @@ function PipelinePage() {
         description="Only active leads. Drag between stages — every move is logged."
         actions={
           <div className="flex items-center gap-2">
+            {isOwner && (
+              <Select value={repFilter} onValueChange={setRepFilter}>
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                  <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All reps ({leads.length})</SelectItem>
+                  <SelectItem value="unassigned">Unassigned ({repCounts.unassigned})</SelectItem>
+                  {reps.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name} ({repCounts.m.get(r.id) ?? 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Button size="sm" variant="outline" onClick={() => setShowClosed((v) => !v)} className="hidden sm:inline-flex">
               {showClosed ? <EyeOff className="h-3.5 w-3.5 mr-1.5" /> : <Eye className="h-3.5 w-3.5 mr-1.5" />}
               {showClosed ? "Hide closed" : `Show closed (${wonCount + lostCount})`}

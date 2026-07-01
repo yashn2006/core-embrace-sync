@@ -175,6 +175,26 @@ function SettingsPage() {
 
         <section className="surface p-6 space-y-3 animate-reveal">
           <div className="flex items-center gap-2">
+            {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5 text-primary" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />}
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Follow-up alerts</div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Get a browser notification when a lead follow-up is due or overdue. Works while any CoreEgin tab is open.
+          </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs">
+              Status: <span className={notifPerm === "granted" ? "text-primary font-medium" : "text-muted-foreground"}>
+                {notifPerm === "granted" ? "On" : notifPerm === "denied" ? "Blocked by browser" : notifPerm === "unsupported" ? "Not supported" : "Off"}
+              </span>
+            </div>
+            {notifPerm !== "granted" && notifPerm !== "unsupported" && (
+              <Button size="sm" onClick={enableAlerts}><Bell className="h-3.5 w-3.5 mr-1.5" />Enable alerts</Button>
+            )}
+          </div>
+        </section>
+
+        <section className="surface p-6 space-y-3 animate-reveal">
+          <div className="flex items-center gap-2">
             <Shield className="h-3.5 w-3.5 text-primary" />
             <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Account</div>
           </div>

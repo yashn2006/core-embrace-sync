@@ -43,7 +43,7 @@ function LeadsPage() {
   const [csvOpen, setCsvOpen] = useState(false);
 
   const setSearch = (patch: Partial<{ q: string; stage: string; owner: string }>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+    navigate({ search: (prev: { q: string; stage: string; owner: string }) => ({ ...prev, ...patch }), replace: true });
 
   async function refresh() {
     setLoading(true);

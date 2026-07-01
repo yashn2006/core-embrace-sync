@@ -243,6 +243,91 @@ export type Database = {
           },
         ]
       }
+      meeting_attendees: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          created_at: string
+          daily_room_name: string | null
+          daily_room_url: string | null
+          description: string | null
+          end_at: string
+          id: string
+          lead_id: string | null
+          org_id: string
+          scheduled_by: string
+          start_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_room_name?: string | null
+          daily_room_url?: string | null
+          description?: string | null
+          end_at: string
+          id?: string
+          lead_id?: string | null
+          org_id?: string
+          scheduled_by: string
+          start_at: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_room_name?: string | null
+          daily_room_url?: string | null
+          description?: string | null
+          end_at?: string
+          id?: string
+          lead_id?: string | null
+          org_id?: string
+          scheduled_by?: string
+          start_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachment_name: string | null

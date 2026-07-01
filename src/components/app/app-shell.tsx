@@ -1,15 +1,17 @@
 import { type ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu } from "lucide-react";
+import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useChatUnread } from "@/hooks/use-chat-unread";
+import { useFollowupNotifications } from "@/hooks/use-followup-notifications";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leads", label: "Leads", icon: Users },
   { to: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+  { to: "/lead-logs", label: "Lead logs", icon: MessagesSquare },
   { to: "/chat", label: "Chat", icon: MessageSquare },
 ] as const;
 
@@ -19,6 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const initials = (user?.email ?? "?").slice(0, 1).toUpperCase();
   const { total: unread } = useChatUnread();
   const [mobileOpen, setMobileOpen] = useState(false);
+  useFollowupNotifications();
 
   const navItems = (
     <>

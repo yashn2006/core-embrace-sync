@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2 } from "lucide-react";
+import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2, Bell, BellOff } from "lucide-react";
+import { currentFollowupPermission, requestFollowupPermission } from "@/hooks/use-followup-notifications";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — CoreEgin Sales OS" }] }),
@@ -23,7 +24,19 @@ function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">("default");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setNotifPerm(currentFollowupPermission()); }, []);
+
+  async function enableAlerts() {
+    const p = await requestFollowupPermission();
+    setNotifPerm(p);
+    if (p === "granted") {
+      toast.success("Follow-up alerts enabled");
+      try { new Notification("CoreEgin alerts on", { body: "You'll be pinged when a follow-up is due.", icon: "/CEWHITE.png" }); } catch {}
+    } else if (p === "denied") toast.error("Notifications blocked — enable them in your browser site settings.");
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -157,6 +170,26 @@ function SettingsPage() {
           </div>
           <div className="flex justify-end">
             <Button onClick={changePassword} disabled={busy || !password}>Update password</Button>
+          </div>
+        </section>
+
+        <section className="surface p-6 space-y-3 animate-reveal">
+          <div className="flex items-center gap-2">
+            {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5 text-primary" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />}
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Follow-up alerts</div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Get a browser notification when a lead follow-up is due or overdue. Works while any CoreEgin tab is open.
+          </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs">
+              Status: <span className={notifPerm === "granted" ? "text-primary font-medium" : "text-muted-foreground"}>
+                {notifPerm === "granted" ? "On" : notifPerm === "denied" ? "Blocked by browser" : notifPerm === "unsupported" ? "Not supported" : "Off"}
+              </span>
+            </div>
+            {notifPerm !== "granted" && notifPerm !== "unsupported" && (
+              <Button size="sm" onClick={enableAlerts}><Bell className="h-3.5 w-3.5 mr-1.5" />Enable alerts</Button>
+            )}
           </div>
         </section>
 

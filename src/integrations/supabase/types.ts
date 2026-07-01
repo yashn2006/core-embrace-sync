@@ -127,6 +127,7 @@ export type Database = {
           company: string | null
           created_at: string
           created_by: string | null
+          custom_status: string | null
           deal_value: number | null
           description: string | null
           email: string | null
@@ -148,6 +149,7 @@ export type Database = {
           company?: string | null
           created_at?: string
           created_by?: string | null
+          custom_status?: string | null
           deal_value?: number | null
           description?: string | null
           email?: string | null
@@ -169,6 +171,7 @@ export type Database = {
           company?: string | null
           created_at?: string
           created_by?: string | null
+          custom_status?: string | null
           deal_value?: number | null
           description?: string | null
           email?: string | null
@@ -367,6 +370,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          org_id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          org_id: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          org_id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

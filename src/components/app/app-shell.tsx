@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Search, Sparkles, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { useChatUnread } from "@/hooks/use-chat-unread";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { role, user, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const initials = (user?.email ?? "?").slice(0, 1).toUpperCase();
+  const unread = useChatUnread();
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground relative">
@@ -35,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {NAV.map((item) => {
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             const Icon = item.icon;
+            const showBadge = item.to === "/chat" && unread > 0;
             return (
               <Link
                 key={item.to}
@@ -49,6 +52,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full" style={{ background: "var(--gradient-magenta)" }} />}
                 <Icon className={"h-4 w-4 transition-colors " + (active ? "text-primary" : "group-hover:text-foreground")} />
                 <span>{item.label}</span>
+                {showBadge && (
+                  <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold flex items-center justify-center text-white tabular animate-pulse-ring" style={{ background: "var(--gradient-magenta)" }}>
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -137,16 +145,25 @@ export function AppShell({ children }: { children: ReactNode }) {
           {NAV.map((item) => {
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             const Icon = item.icon;
+            const showBadge = item.to === "/chat" && unread > 0;
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 className={
                   "flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] transition-colors " +
+                  "relative " +
                   (active ? "text-primary font-medium" : "text-muted-foreground")
                 }
               >
-                <Icon className="h-4 w-4" />
+                <div className="relative">
+                  <Icon className="h-4 w-4" />
+                  {showBadge && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-semibold flex items-center justify-center text-white tabular" style={{ background: "var(--gradient-magenta)" }}>
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
+                </div>
                 <span>{item.label}</span>
               </Link>
             );

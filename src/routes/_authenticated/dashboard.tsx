@@ -117,7 +117,7 @@ function DashboardPage() {
     return { overdue: overdue.sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()), upcoming };
   }, [leads, user, isOwner]);
 
-  const displayName = user?.email?.split("@")[0] ?? "there";
+  const { displayName } = useAuth();
 
   return (
     <>

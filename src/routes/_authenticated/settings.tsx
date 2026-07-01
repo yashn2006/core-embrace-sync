@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2 } from "lucide-react";
+import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2, Bell, BellOff } from "lucide-react";
+import { currentFollowupPermission, requestFollowupPermission } from "@/hooks/use-followup-notifications";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — CoreEgin Sales OS" }] }),
@@ -23,7 +24,19 @@ function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">("default");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setNotifPerm(currentFollowupPermission()); }, []);
+
+  async function enableAlerts() {
+    const p = await requestFollowupPermission();
+    setNotifPerm(p);
+    if (p === "granted") {
+      toast.success("Follow-up alerts enabled");
+      try { new Notification("CoreEgin alerts on", { body: "You'll be pinged when a follow-up is due.", icon: "/CEWHITE.png" }); } catch {}
+    } else if (p === "denied") toast.error("Notifications blocked — enable them in your browser site settings.");
+  }
 
   useEffect(() => {
     if (!user) return;

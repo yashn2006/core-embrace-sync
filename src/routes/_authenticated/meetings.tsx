@@ -296,7 +296,7 @@ function MeetingCard({ m, currentUserId, onJoin, onCancel, onReschedule, onIcs, 
             <div className="mt-2 flex -space-x-2">
               {m.attendees.slice(0, 6).map((a) => (
                 <div key={a.user_id} title={a.profile?.name ?? "?"} className="h-6 w-6 rounded-full border-2 border-background bg-muted overflow-hidden flex items-center justify-center text-[10px] font-semibold">
-                  {a.profile?.avatar_url ? <img src={a.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (a.profile?.name?.[0] ?? "?").toUpperCase()}
+                  {a.profile?.avatar_url ? <SignedImage bucket="avatars" path={a.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (a.profile?.name?.[0] ?? "?").toUpperCase()}
                 </div>
               ))}
               {m.attendees.length > 6 && <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px]">+{m.attendees.length - 6}</div>}
@@ -444,7 +444,7 @@ function ScheduleDialog({ open, onOpenChange, profiles, leads, onSubmit }: {
                       className="accent-primary"
                     />
                     <div className="h-6 w-6 rounded-full bg-muted overflow-hidden flex items-center justify-center text-[10px] font-semibold">
-                      {p.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" /> : p.name[0]?.toUpperCase()}
+                      {p.avatar_url ? <SignedImage bucket="avatars" path={p.avatar_url} alt="" className="h-full w-full object-cover" /> : p.name[0]?.toUpperCase()}
                     </div>
                     <span className="text-sm">{p.name}</span>
                     <span className="text-[10px] text-muted-foreground ml-auto">{p.email}</span>

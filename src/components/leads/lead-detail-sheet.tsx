@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Trophy, XCircle, Pencil, Building2, Mail, Phone, Calendar, User, Tag, Check } from "lucide-react";
-import { formatCurrency, updateLead, updateLeadCustomStatus, type Lead, type Profile } from "@/lib/leads";
+import { formatCurrency, updateLead, updateLeadCustomStatus, updateLeadProgress, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, STAGE_ACCENT, type StageKey } from "@/lib/constants";
 import { ActivityTimeline } from "./activity-timeline";
 import { LeadChatPanel } from "./lead-chat-panel";
@@ -34,9 +34,11 @@ export function LeadDetailSheet({
   const [lostOpen, setLostOpen] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [savingStatus, setSavingStatus] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
 
   if (!lead) return null;
   const currentStatus = (lead as any).custom_status ?? "";
+  const currentProgress = (lead as any).progress ?? 0;
   const owner = profiles.find((p) => p.id === lead.assigned_to);
   const creator = profiles.find((p) => p.id === lead.created_by);
   const stageAccent = STAGE_ACCENT[lead.stage as StageKey];
@@ -52,6 +54,15 @@ export function LeadDetailSheet({
       onChanged();
     } catch (e: any) { toast.error(e.message); }
     setSavingStatus(false);
+  }
+
+  async function saveProgress(next: number) {
+    try {
+      await updateLeadProgress(lead!.id, next);
+      await logActivity({ lead_id: lead!.id, type: "note", outcome: `progress → ${next}%`, created_by: user!.id });
+      toast.success(`Progress ${next}%`);
+      onChanged();
+    } catch (e: any) { toast.error(e.message); }
   }
 
   async function moveStage(next: StageKey) {
@@ -144,6 +155,42 @@ export function LeadDetailSheet({
                       {t}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-lg border border-hairline bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <span>Progress</span>
+                  <span className="tabular text-primary font-semibold">{progress || currentProgress}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-background overflow-hidden">
+                  <div className="h-full rounded-full transition-[width]" style={{ width: `${progress || currentProgress}%`, background: "var(--gradient-magenta)" }} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    key={lead.id + ":progress"}
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    defaultValue={currentProgress}
+                    onChange={(e) => setProgress(Number(e.target.value))}
+                    onMouseUp={(e) => saveProgress(Number((e.target as HTMLInputElement).value))}
+                    onTouchEnd={(e) => saveProgress(Number((e.target as HTMLInputElement).value))}
+                    className="flex-1 accent-[hsl(var(--primary))]"
+                  />
+                  <div className="flex gap-1">
+                    {[25, 50, 75, 100].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => { setProgress(p); saveProgress(p); }}
+                        className="text-[10px] rounded-md bg-background hover:bg-primary/10 hover:text-primary border border-hairline px-1.5 py-0.5 tabular transition-colors"
+                      >
+                        {p}%
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </SheetHeader>

@@ -33,6 +33,7 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
     deal_value: "",
     assigned_to: user?.id ?? "",
     next_follow_up: "",
+    progress: 0,
   });
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
         deal_value: lead?.deal_value ? String(lead.deal_value) : "",
         assigned_to: lead?.assigned_to ?? user?.id ?? "",
         next_follow_up: lead?.next_follow_up ? lead.next_follow_up.slice(0, 16) : "",
+        progress: (lead as any)?.progress ?? 0,
       });
     }
   }, [open, lead, user?.id]);
@@ -70,6 +72,7 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
         deal_value: form.deal_value ? Number(form.deal_value) : null,
         assigned_to: form.assigned_to || user?.id || null,
         next_follow_up: form.next_follow_up ? new Date(form.next_follow_up).toISOString() : null,
+        progress: Math.max(0, Math.min(100, Number(form.progress) || 0)),
       };
       if (lead) {
         await updateLead(lead.id, payload);
@@ -127,6 +130,27 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
           </Field>
           <Field label="Follow-up date">
             <Input type="datetime-local" value={form.next_follow_up} onChange={(e) => setForm({ ...form, next_follow_up: e.target.value })} />
+          </Field>
+          <Field label={`Progress · ${form.progress}%`} className="col-span-2">
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={form.progress}
+                onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })}
+                className="flex-1 accent-[hsl(var(--primary))]"
+              />
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={form.progress}
+                onChange={(e) => setForm({ ...form, progress: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+                className="w-20 tabular"
+              />
+            </div>
           </Field>
           {isOwner && (
             <Field label="Assign to" className="col-span-2">

@@ -203,6 +203,14 @@ function Card({ lead, profiles, dragging }: { lead: Lead; profiles: Profile[]; d
           <span className="truncate">{lead.custom_status}</span>
         </div>
       )}
+      {typeof (lead as any).progress === "number" && (lead as any).progress > 0 && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="h-1 flex-1 rounded-full bg-muted overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: `${(lead as any).progress}%`, background: "var(--gradient-magenta)" }} />
+          </div>
+          <span className="text-[9px] tabular text-muted-foreground">{(lead as any).progress}%</span>
+        </div>
+      )}
       {owner && (
         <div className="mt-2 flex items-center gap-1.5">
           <div className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white" style={{ background: "var(--gradient-magenta)" }}>

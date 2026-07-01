@@ -11,7 +11,7 @@ import { DEFAULT_ORG_ID, SOURCES, type SourceKey } from "@/lib/constants";
 import { useAuth } from "@/hooks/use-auth";
 import type { Profile } from "@/lib/leads";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Upload, FileSpreadsheet, Sparkles } from "lucide-react";
 
 const LEAD_FIELDS = [
   { key: "name", label: "Name *", required: true },
@@ -173,6 +173,26 @@ export function CsvImportDialog({
           <DialogTitle className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4 text-primary" /> Import leads from CSV</DialogTitle>
           <DialogDescription>Map your columns, assign the batch to a rep, and import.</DialogDescription>
         </DialogHeader>
+
+        <div className="grid grid-cols-3 gap-2 text-[11px]">
+          {[
+            { n: 1, t: "Upload", d: "CSV or Excel with headers" },
+            { n: 2, t: "Map & assign", d: "Match columns → pick rep" },
+            { n: 3, t: "Rep sees leads", d: "Instantly in their pipeline" },
+          ].map((s, i) => {
+            const done = (rows.length > 0 && i === 0) || (mapping.name && i <= 1);
+            const current = (rows.length === 0 && i === 0) || (rows.length > 0 && !mapping.name && i === 1) || (mapping.name && i === 2);
+            return (
+              <div key={s.n} className={"rounded-lg border p-2.5 transition-colors " + (current ? "border-primary/50 bg-primary/[.04]" : done ? "border-hairline bg-muted/40" : "border-hairline")}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className={"h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white " + (done || current ? "" : "opacity-40")} style={{ background: "var(--gradient-magenta)" }}>{s.n}</span>
+                  <span className="font-medium text-foreground">{s.t}</span>
+                </div>
+                <div className="text-muted-foreground pl-5.5">{s.d}</div>
+              </div>
+            );
+          })}
+        </div>
 
         {rows.length === 0 ? (
           <label className="block border-2 border-dashed border-hairline rounded-xl p-10 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/[.02] transition-colors">

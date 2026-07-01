@@ -32,6 +32,8 @@ export interface LeadInput {
   deal_value?: number | null;
   assigned_to?: string | null;
   next_follow_up?: string | null;
+  progress?: number | null;
+  custom_status?: string | null;
 }
 
 export async function createLead(input: LeadInput, userId: string) {
@@ -49,8 +51,20 @@ export async function createLead(input: LeadInput, userId: string) {
   return data;
 }
 
-export async function updateLead(id: string, patch: Partial<LeadInput> & { won_at?: string | null; lost_at?: string | null; handoff_note?: string | null }) {
+export async function updateLead(id: string, patch: Partial<LeadInput> & { won_at?: string | null; lost_at?: string | null; handoff_note?: string | null; progress?: number | null }) {
   const { data, error } = await supabase.from("leads").update(patch as never).eq("id", id).select("*").single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateLeadProgress(id: string, progress: number) {
+  const p = Math.max(0, Math.min(100, Math.round(progress)));
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ progress: p } as never)
+    .eq("id", id)
+    .select("*")
+    .single();
   if (error) throw error;
   return data;
 }

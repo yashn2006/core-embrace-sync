@@ -194,6 +194,8 @@ function SettingsPage() {
           </div>
         </section>
 
+        <BackgroundPushSection />
+
         <section className="surface p-6 space-y-3 animate-reveal">
           <div className="flex items-center gap-2">
             <Shield className="h-3.5 w-3.5 text-primary" />

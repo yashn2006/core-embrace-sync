@@ -157,6 +157,42 @@ export function LeadDetailSheet({
                   ))}
                 </div>
               </div>
+
+              <div className="mt-3 rounded-lg border border-hairline bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <span>Progress</span>
+                  <span className="tabular text-primary font-semibold">{progress || currentProgress}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-background overflow-hidden">
+                  <div className="h-full rounded-full transition-[width]" style={{ width: `${progress || currentProgress}%`, background: "var(--gradient-magenta)" }} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    key={lead.id + ":progress"}
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    defaultValue={currentProgress}
+                    onChange={(e) => setProgress(Number(e.target.value))}
+                    onMouseUp={(e) => saveProgress(Number((e.target as HTMLInputElement).value))}
+                    onTouchEnd={(e) => saveProgress(Number((e.target as HTMLInputElement).value))}
+                    className="flex-1 accent-[hsl(var(--primary))]"
+                  />
+                  <div className="flex gap-1">
+                    {[25, 50, 75, 100].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => { setProgress(p); saveProgress(p); }}
+                        className="text-[10px] rounded-md bg-background hover:bg-primary/10 hover:text-primary border border-hairline px-1.5 py-0.5 tabular transition-colors"
+                      >
+                        {p}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </SheetHeader>
           </div>
 

@@ -35,14 +35,8 @@ export function LeadDetailSheet({
   const [status, setStatus] = useState<string>("");
   const [savingStatus, setSavingStatus] = useState(false);
 
-  // reset custom-status input when the lead being viewed changes
-  useState(() => {}); // keep hook count stable
-
   if (!lead) return null;
   const currentStatus = (lead as any).custom_status ?? "";
-  if (status === "" && currentStatus && status !== currentStatus) {
-    // no-op: initial mount handled by defaultValue below
-  }
   const owner = profiles.find((p) => p.id === lead.assigned_to);
   const creator = profiles.find((p) => p.id === lead.created_by);
   const stageAccent = STAGE_ACCENT[lead.stage as StageKey];

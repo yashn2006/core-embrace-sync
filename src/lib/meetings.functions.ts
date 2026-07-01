@@ -280,7 +280,7 @@ export const completeMeeting = createServerFn({ method: "POST" })
             type: "note",
             outcome: "scheduled",
             response_text: data.next_step_note?.trim() || `Next step scheduled after meeting`,
-            follow_up_at: data.next_step_at,
+            next_action: data.next_step_at,
             created_by: userId,
           });
         } catch (e) { console.error("next-step insert", e); }

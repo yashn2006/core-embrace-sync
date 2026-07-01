@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SignedAvatarImage, SignedLink } from "@/components/signed-image";
 import { supabase } from "@/integrations/supabase/client";
 import { listLeads, listProfiles, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_ACCENT, type StageKey } from "@/lib/constants";
@@ -168,7 +169,7 @@ function ActiveThread({ group, profileMap }: { group: { lead: Lead; msgs: Messag
           return (
             <div key={m.id} className="flex gap-2.5">
               <Avatar className="h-7 w-7 shrink-0">
-                {sender?.avatar_url && <AvatarImage src={sender.avatar_url} />}
+                {sender?.avatar_url && <SignedAvatarImage bucket="avatars" path={sender.avatar_url} />}
                 <AvatarFallback className="text-[10px]"><UserIcon className="h-3 w-3" /></AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -178,7 +179,7 @@ function ActiveThread({ group, profileMap }: { group: { lead: Lead; msgs: Messag
                 </div>
                 {m.content && <div className="text-sm mt-0.5 whitespace-pre-wrap break-words">{m.content}</div>}
                 {(m as any).attachment_url && (
-                  <a href={(m as any).attachment_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">Attachment</a>
+                  <SignedLink bucket="chat-attachments" path={(m as any).attachment_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">Attachment</SignedLink>
                 )}
               </div>
             </div>

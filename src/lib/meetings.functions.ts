@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const ORG_ID = "00000000-0000-0000-0000-000000000001";
+
 /**
  * Create a Daily.co room via REST API. Returns { name, url }.
  * Room auto-expires 4 hours after scheduled end.
@@ -35,6 +37,44 @@ async function createDailyRoom(opts: { name: string; expUnix: number }): Promise
   }
   const data = (await res.json()) as { name: string; url: string };
   return { name: data.name, url: data.url };
+}
+
+/** Insert an activity row (best-effort). */
+async function logMeetingActivity(
+  supabase: any,
+  opts: { lead_id: string; outcome: string; note: string; userId: string },
+) {
+  try {
+    await supabase.from("activities").insert({
+      lead_id: opts.lead_id,
+      org_id: ORG_ID,
+      type: "meeting",
+      outcome: opts.outcome,
+      response_text: opts.note,
+      created_by: opts.userId,
+    });
+  } catch (e) {
+    console.error("logMeetingActivity", e);
+  }
+}
+
+/** Enqueue push reminders for all attendees. */
+async function enqueueMeetingPush(
+  supabase: any,
+  opts: { meeting_id: string; title: string; start_at: string; attendee_ids: string[] },
+) {
+  const startMs = new Date(opts.start_at).getTime();
+  const reminderAt = new Date(startMs - 10 * 60_000).toISOString(); // 10min before
+  const rows = opts.attendee_ids.map((uid) => ({
+    user_id: uid,
+    title: `Meeting soon: ${opts.title}`,
+    body: `Starts in 10 minutes. Tap to join.`,
+    url: `/meetings`,
+    tag: `meeting-${opts.meeting_id}`,
+    dedupe_key: `meeting-${opts.meeting_id}-remind`,
+    scheduled_for: reminderAt,
+  }));
+  try { await supabase.from("push_notifications_queue").upsert(rows, { onConflict: "user_id,dedupe_key" }); } catch (e) { console.error("enqueue push", e); }
 }
 
 /**
@@ -89,7 +129,81 @@ export const scheduleMeeting = createServerFn({ method: "POST" })
     const { error: attErr } = await supabase.from("meeting_attendees").insert(rows);
     if (attErr) throw new Error(attErr.message);
 
+    // Activity timeline + push reminders
+    if (data.lead_id) {
+      const startNice = new Date(data.start_at).toLocaleString();
+      await logMeetingActivity(supabase, {
+        lead_id: data.lead_id,
+        outcome: "scheduled",
+        note: `Meeting "${data.title}" scheduled for ${startNice}`,
+        userId,
+      });
+    }
+    await enqueueMeetingPush(supabase, {
+      meeting_id: meeting.id,
+      title: data.title.trim(),
+      start_at: data.start_at,
+      attendee_ids: attendees,
+    });
+
     return { meeting };
+  });
+
+/** Reschedule / edit a meeting (title, notes, times). Logs activity. */
+export const updateMeeting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: {
+    meeting_id: string;
+    title?: string;
+    description?: string | null;
+    start_at?: string;
+    end_at?: string;
+  }) => {
+    if (!data.meeting_id) throw new Error("meeting_id required");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: before, error: bErr } = await supabase
+      .from("meetings")
+      .select("id,title,start_at,end_at,lead_id")
+      .eq("id", data.meeting_id)
+      .single();
+    if (bErr) throw new Error(bErr.message);
+
+    const patch: Record<string, unknown> = {};
+    if (data.title !== undefined) patch.title = data.title.trim();
+    if (data.description !== undefined) patch.description = data.description;
+    if (data.start_at) patch.start_at = data.start_at;
+    if (data.end_at) patch.end_at = data.end_at;
+
+    const { error: uErr } = await supabase.from("meetings").update(patch).eq("id", data.meeting_id);
+    if (uErr) throw new Error(uErr.message);
+
+    if (before.lead_id) {
+      const rescheduled = data.start_at && data.start_at !== before.start_at;
+      const note = rescheduled
+        ? `Meeting "${before.title}" rescheduled to ${new Date(data.start_at!).toLocaleString()}`
+        : `Meeting "${before.title}" updated`;
+      await logMeetingActivity(supabase, {
+        lead_id: before.lead_id,
+        outcome: rescheduled ? "rescheduled" : "updated",
+        note,
+        userId,
+      });
+    }
+
+    // Update push reminder time if start changed
+    if (data.start_at) {
+      const { data: atts } = await supabase.from("meeting_attendees").select("user_id").eq("meeting_id", data.meeting_id);
+      await enqueueMeetingPush(supabase, {
+        meeting_id: data.meeting_id,
+        title: (data.title ?? before.title).trim(),
+        start_at: data.start_at,
+        attendee_ids: (atts ?? []).map((a: { user_id: string }) => a.user_id),
+      });
+    }
+    return { ok: true };
   });
 
 /**
@@ -102,10 +216,10 @@ export const cancelMeeting = createServerFn({ method: "POST" })
     return data;
   })
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: meeting, error } = await supabase
       .from("meetings")
-      .select("daily_room_name")
+      .select("daily_room_name,title,lead_id")
       .eq("id", data.meeting_id)
       .single();
     if (error) throw new Error(error.message);
@@ -125,6 +239,20 @@ export const cancelMeeting = createServerFn({ method: "POST" })
       .update({ status: "cancelled" })
       .eq("id", data.meeting_id);
     if (upErr) throw new Error(upErr.message);
+
+    if (meeting?.lead_id) {
+      await logMeetingActivity(supabase, {
+        lead_id: meeting.lead_id,
+        outcome: "cancelled",
+        note: `Meeting "${meeting.title}" cancelled`,
+        userId,
+      });
+    }
+
+    // Drop any pending reminders
+    try {
+      await supabase.from("push_notifications_queue").delete().eq("tag", `meeting-${data.meeting_id}`).is("sent_at", null);
+    } catch {}
 
     return { ok: true };
   });

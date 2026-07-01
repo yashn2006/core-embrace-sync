@@ -14,16 +14,382 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          next_action: string | null
+          org_id: string
+          outcome: string | null
+          response_text: string | null
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          next_action?: string | null
+          org_id: string
+          outcome?: string | null
+          response_text?: string | null
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          next_action?: string | null
+          org_id?: string
+          outcome?: string | null
+          response_text?: string | null
+          type?: Database["public"]["Enums"]["activity_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_batches: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          filename: string
+          id: string
+          org_id: string
+          row_count: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          filename: string
+          id?: string
+          org_id: string
+          row_count?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          filename?: string
+          id?: string
+          org_id?: string
+          row_count?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          assigned_to: string | null
+          company: string | null
+          created_at: string
+          created_by: string | null
+          deal_value: number | null
+          description: string | null
+          email: string | null
+          handoff_note: string | null
+          id: string
+          import_batch_id: string | null
+          lost_at: string | null
+          name: string
+          next_follow_up: string | null
+          org_id: string
+          phone: string | null
+          source: Database["public"]["Enums"]["lead_source"]
+          stage: Database["public"]["Enums"]["lead_stage"]
+          updated_at: string
+          won_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_value?: number | null
+          description?: string | null
+          email?: string | null
+          handoff_note?: string | null
+          id?: string
+          import_batch_id?: string | null
+          lost_at?: string | null
+          name: string
+          next_follow_up?: string | null
+          org_id: string
+          phone?: string | null
+          source?: Database["public"]["Enums"]["lead_source"]
+          stage?: Database["public"]["Enums"]["lead_stage"]
+          updated_at?: string
+          won_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_value?: number | null
+          description?: string | null
+          email?: string | null
+          handoff_note?: string | null
+          id?: string
+          import_batch_id?: string | null
+          lost_at?: string | null
+          name?: string
+          next_follow_up?: string | null
+          org_id?: string
+          phone?: string | null
+          source?: Database["public"]["Enums"]["lead_source"]
+          stage?: Database["public"]["Enums"]["lead_stage"]
+          updated_at?: string
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lost_reasons: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          note: string | null
+          org_id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          note?: string | null
+          org_id: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          note?: string | null
+          org_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lost_reasons_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lost_reasons_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          channel_type: Database["public"]["Enums"]["channel_type"]
+          content: string
+          created_at: string
+          id: string
+          org_id: string
+          read_at: string | null
+          recipient_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          channel_type: Database["public"]["Enums"]["channel_type"]
+          content: string
+          created_at?: string
+          id?: string
+          org_id: string
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          channel_type?: Database["public"]["Enums"]["channel_type"]
+          content?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          name?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_org_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      activity_type: "call" | "email" | "whatsapp" | "meeting" | "note"
+      app_role: "owner" | "rep"
+      channel_type: "team" | "direct"
+      lead_source:
+        | "website"
+        | "referral"
+        | "cold_outreach"
+        | "linkedin"
+        | "whatsapp"
+        | "other"
+      lead_stage:
+        | "new"
+        | "contacted"
+        | "interested"
+        | "meeting_scheduled"
+        | "proposal_sent"
+        | "won"
+        | "lost"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +516,27 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      activity_type: ["call", "email", "whatsapp", "meeting", "note"],
+      app_role: ["owner", "rep"],
+      channel_type: ["team", "direct"],
+      lead_source: [
+        "website",
+        "referral",
+        "cold_outreach",
+        "linkedin",
+        "whatsapp",
+        "other",
+      ],
+      lead_stage: [
+        "new",
+        "contacted",
+        "interested",
+        "meeting_scheduled",
+        "proposal_sent",
+        "won",
+        "lost",
+      ],
+    },
   },
 } as const

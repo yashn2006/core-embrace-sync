@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2, Bell, BellOff } from "lucide-react";
 import { currentFollowupPermission, requestFollowupPermission } from "@/hooks/use-followup-notifications";
+import { usePushSubscription } from "@/hooks/use-push-subscription";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — CoreEgin Sales OS" }] }),

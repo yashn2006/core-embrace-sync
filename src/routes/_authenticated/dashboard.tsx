@@ -315,3 +315,45 @@ function DashboardPage() {
     </>
   );
 }
+
+function ConversionTrend({ trend, maxTrendCount }: { trend: Array<{ start: Date; won: number; lost: number; rate: number; wonValue: number }>; maxTrendCount: number }) {
+  const W = 560, H = 140, P = 24;
+  const iw = W - P * 2, ih = H - P * 2;
+  const pts = trend.map((b, i) => {
+    const x = P + (trend.length === 1 ? iw / 2 : (i / (trend.length - 1)) * iw);
+    const y = P + ih - (b.rate / 100) * ih;
+    return { x, y, b, i };
+  });
+  const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area = `${path} L${pts[pts.length - 1].x.toFixed(1)},${(P + ih).toFixed(1)} L${pts[0].x.toFixed(1)},${(P + ih).toFixed(1)} Z`;
+  return (
+    <div className="w-full overflow-hidden">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[160px]" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="trend-fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0, 25, 50, 75, 100].map((v) => {
+          const y = P + ih - (v / 100) * ih;
+          return <line key={v} x1={P} x2={W - P} y1={y} y2={y} stroke="currentColor" strokeOpacity="0.06" strokeDasharray="2 3" />;
+        })}
+        {pts.map((p) => {
+          const total = p.b.won + p.b.lost;
+          const bh = (total / maxTrendCount) * (ih * 0.35);
+          return <rect key={`bar-${p.i}`} x={p.x - 8} y={P + ih - bh} width={16} height={bh} rx={3} fill="currentColor" opacity="0.08" />;
+        })}
+        <path d={area} fill="url(#trend-fill)" />
+        <path d={path} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p) => (
+          <g key={`pt-${p.i}`}>
+            <circle cx={p.x} cy={p.y} r={3.5} fill="hsl(var(--primary))" />
+            <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize="9" fill="hsl(var(--primary))" fontWeight="600">{p.b.rate}%</text>
+            <text x={p.x} y={H - 6} textAnchor="middle" fontSize="9" fill="currentColor" opacity="0.55">{format(p.b.start, "MMM d")}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}

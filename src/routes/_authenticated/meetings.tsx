@@ -465,3 +465,138 @@ function ScheduleDialog({ open, onOpenChange, profiles, leads, onSubmit }: {
     </Dialog>
   );
 }
+
+function RescheduleDialog({ meeting, onClose, onSubmit }: {
+  meeting: MeetingRow | null;
+  onClose: () => void;
+  onSubmit: (p: { meeting_id: string; title: string; description: string | null; start_at: string; end_at: string }) => Promise<void>;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [start, setStart] = useState("");
+  const [duration, setDuration] = useState("30");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!meeting) return;
+    setTitle(meeting.title);
+    setDescription(meeting.description ?? "");
+    setStart(toLocalInput(new Date(meeting.start_at)));
+    const mins = Math.max(15, Math.round((new Date(meeting.end_at).getTime() - new Date(meeting.start_at).getTime()) / 60_000));
+    setDuration(String(mins));
+  }, [meeting]);
+
+  async function submit() {
+    if (!meeting) return;
+    const startDate = new Date(start);
+    const endDate = new Date(startDate.getTime() + parseInt(duration, 10) * 60_000);
+    setSaving(true);
+    try {
+      await onSubmit({
+        meeting_id: meeting.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        start_at: startDate.toISOString(),
+        end_at: endDate.toISOString(),
+      });
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={!!meeting} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> Reschedule meeting</DialogTitle>
+          <DialogDescription>All attendees are notified live and the video room stays valid.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <div><Label>Notes</Label><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Starts</Label><Input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+            <div>
+              <Label>Duration</Label>
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["15","30","45","60","90","120"].map((d) => <SelectItem key={d} value={d}>{d} min</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} style={{ background: "var(--gradient-magenta)" }}>{saving ? "Saving…" : "Save changes"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CompleteDialog({ meeting, onClose, onSubmit }: {
+  meeting: MeetingRow | null;
+  onClose: () => void;
+  onSubmit: (p: { meeting_id: string; outcome: "completed" | "won" | "lost" | "no_show" | "follow_up"; notes: string; next_step_at?: string | null; next_step_note?: string | null }) => Promise<void>;
+}) {
+  const [outcome, setOutcome] = useState<"completed" | "won" | "lost" | "no_show" | "follow_up">("completed");
+  const [notes, setNotes] = useState("");
+  const [nextAt, setNextAt] = useState("");
+  const [nextNote, setNextNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (meeting) { setOutcome("completed"); setNotes(""); setNextAt(""); setNextNote(""); } }, [meeting]);
+
+  async function submit() {
+    if (!meeting) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        meeting_id: meeting.id,
+        outcome,
+        notes: notes.trim(),
+        next_step_at: nextAt ? new Date(nextAt).toISOString() : null,
+        next_step_note: nextNote.trim() || null,
+      });
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={!!meeting} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Post-meeting notes</DialogTitle>
+          <DialogDescription>Saved to the linked lead's activity timeline instantly.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Outcome</Label>
+            <Select value={outcome} onValueChange={(v) => setOutcome(v as typeof outcome)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="won">Won — deal closed</SelectItem>
+                <SelectItem value="lost">Lost — no deal</SelectItem>
+                <SelectItem value="follow_up">Follow-up needed</SelectItem>
+                <SelectItem value="no_show">No-show</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>What was discussed?</Label>
+            <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Key points, decisions, blockers, action items…" autoFocus />
+          </div>
+          <div className="rounded-lg border border-hairline p-3 space-y-2 bg-muted/30">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Next step (optional)</Label>
+            <Input type="datetime-local" value={nextAt} onChange={(e) => setNextAt(e.target.value)} />
+            <Input placeholder="e.g. Send proposal deck" value={nextNote} onChange={(e) => setNextNote(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving || !notes.trim()} style={{ background: "var(--gradient-magenta)" }}>{saving ? "Saving…" : "Save to timeline"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

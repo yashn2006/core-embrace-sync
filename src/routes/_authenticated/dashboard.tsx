@@ -6,8 +6,8 @@ import { StatCard } from "@/components/app/stat-card";
 import { useAuth } from "@/hooks/use-auth";
 import { listLeads, listProfiles, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, STAGE_LABEL, SOURCES, type StageKey } from "@/lib/constants";
-import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign } from "lucide-react";
-import { formatDistanceToNow, isPast, isToday, isTomorrow } from "date-fns";
+import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign, Activity, Trophy } from "lucide-react";
+import { formatDistanceToNow, isPast, isToday, isTomorrow, startOfWeek, addWeeks, format, isAfter } from "date-fns";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -78,9 +78,34 @@ function DashboardPage() {
       const mine = leads.filter((l) => l.assigned_to === p.id);
       const won = mine.filter((l) => l.stage === "won").length;
       const closed = mine.filter((l) => l.stage === "won" || l.stage === "lost").length;
-      return { id: p.id, name: p.name, leads: mine.length, won, rate: closed ? Math.round((won / closed) * 100) : 0 };
+      const lost = closed - won;
+      const active = mine.length - closed;
+      const pipeValue = mine.filter((l) => l.stage !== "won" && l.stage !== "lost").reduce((s, l) => s + (l.deal_value ?? 0), 0);
+      const wonValue = mine.filter((l) => l.stage === "won").reduce((s, l) => s + (l.deal_value ?? 0), 0);
+      return { id: p.id, name: p.name, leads: mine.length, won, lost, active, rate: closed ? Math.round((won / closed) * 100) : 0, pipeValue, wonValue };
     }).sort((a, b) => b.won - a.won);
   }, [profiles, leads]);
+
+  // 8-week conversion trend (rolling)
+  const trend = useMemo(() => {
+    const weeks = 8;
+    const now = new Date();
+    const start = startOfWeek(addWeeks(now, -(weeks - 1)), { weekStartsOn: 1 });
+    const buckets = Array.from({ length: weeks }, (_, i) => {
+      const s = addWeeks(start, i);
+      return { start: s, end: addWeeks(s, 1), won: 0, lost: 0, rate: 0, wonValue: 0 };
+    });
+    leads.forEach((l) => {
+      if (l.stage !== "won" && l.stage !== "lost") return;
+      const d = new Date(l.updated_at);
+      const b = buckets.find((b) => !isAfter(d, b.end) && !isAfter(b.start, d));
+      if (!b) return;
+      if (l.stage === "won") { b.won += 1; b.wonValue += l.deal_value ?? 0; } else b.lost += 1;
+    });
+    buckets.forEach((b) => { const t = b.won + b.lost; b.rate = t ? Math.round((b.won / t) * 100) : 0; });
+    return buckets;
+  }, [leads]);
+  const maxTrendCount = Math.max(1, ...trend.map((b) => b.won + b.lost));
 
   const recent = useMemo(() => leads.slice(0, 6), [leads]);
 
@@ -149,19 +174,51 @@ function DashboardPage() {
 
         {isOwner && (
           <div className="surface p-5 animate-reveal">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium mb-4">Rep leaderboard</div>
-            <div className="space-y-1">
-              {repRows.length === 0 && <div className="text-sm text-muted-foreground py-4 text-center">No team members yet.</div>}
-              {repRows.map((r, i) => (
-                <div key={r.id} className="grid grid-cols-[24px_1fr_auto_auto_auto] items-center gap-4 py-2 border-b border-hairline/60 last:border-0">
-                  <div className="text-xs tabular text-muted-foreground">#{i + 1}</div>
-                  <div className="text-sm font-medium">{r.name}</div>
-                  <div className="text-xs tabular text-muted-foreground">{r.leads} leads</div>
-                  <div className="text-xs tabular text-muted-foreground">{r.won} won</div>
-                  <div className="text-xs tabular text-primary font-medium">{r.rate}%</div>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="h-3.5 w-3.5 text-primary" />
+              <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Rep performance</div>
             </div>
+            {repRows.length === 0 && <div className="text-sm text-muted-foreground py-4 text-center">No team members yet.</div>}
+            <div className="space-y-4">
+              {repRows.map((r, i) => {
+                const total = Math.max(1, r.leads);
+                return (
+                  <div key={r.id} className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs tabular text-muted-foreground w-6">#{i + 1}</div>
+                      <div className="text-sm font-medium flex-1 truncate">{r.name}</div>
+                      <div className="text-[10px] tabular text-muted-foreground">{r.leads} leads · {r.won} won</div>
+                      <div className="text-xs tabular text-primary font-semibold w-12 text-right">{r.rate}%</div>
+                    </div>
+                    <div className="flex h-2 rounded-full overflow-hidden bg-muted/60">
+                      <div className="transition-all animate-reveal" style={{ width: `${(r.won / total) * 100}%`, background: "var(--gradient-magenta)" }} title={`${r.won} won`} />
+                      <div className="transition-all animate-reveal" style={{ width: `${(r.active / total) * 100}%`, background: "oklch(0.88 0.06 340)" }} title={`${r.active} active`} />
+                      <div className="transition-all animate-reveal" style={{ width: `${(r.lost / total) * 100}%`, background: "oklch(0.85 0.02 340)" }} title={`${r.lost} lost`} />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground tabular pl-9">
+                      <span>Pipeline {formatCurrency(r.pipeValue)}</span>
+                      <span>Won {formatCurrency(r.wonValue)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 pt-3 border-t border-hairline/60 flex items-center gap-4 text-[10px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ background: "var(--gradient-magenta)" }} /> Won</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[oklch(0.88_0.06_340)]" /> Active</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[oklch(0.85_0.02_340)]" /> Lost</span>
+            </div>
+          </div>
+        )}
+
+        {isOwner && (
+          <div className="surface p-5 animate-reveal">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-3.5 w-3.5 text-primary" />
+              <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Conversion trend — last 8 weeks</div>
+              <div className="ml-auto text-[11px] tabular text-muted-foreground">avg {Math.round(trend.reduce((s, b) => s + b.rate, 0) / trend.length)}%</div>
+            </div>
+            <ConversionTrend trend={trend} maxTrendCount={maxTrendCount} />
           </div>
         )}
 

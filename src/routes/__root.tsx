@@ -86,6 +86,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "The internal CRM for CoreEgin — fast, minimal, built for sales." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "CoreEgin Sales OS" },
+      { name: "twitter:description", content: "The internal CRM for CoreEgin — fast, minimal, built for sales." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fa2d7e9b-7d7f-472f-abe6-5a7def3f80aa/id-preview-5a2aa5e7--f543d288-7d79-4e5d-b7da-43af3711c930.lovable.app-1782928282276.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fa2d7e9b-7d7f-472f-abe6-5a7def3f80aa/id-preview-5a2aa5e7--f543d288-7d79-4e5d-b7da-43af3711c930.lovable.app-1782928282276.png" },
     ],
     links: [
       {

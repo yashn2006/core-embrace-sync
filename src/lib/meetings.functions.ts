@@ -277,7 +277,7 @@ export const completeMeeting = createServerFn({ method: "POST" })
           await supabase.from("activities").insert({
             lead_id: meeting.lead_id,
             org_id: ORG_ID,
-            type: "follow_up",
+            type: "note",
             outcome: "scheduled",
             response_text: data.next_step_note?.trim() || `Next step scheduled after meeting`,
             follow_up_at: data.next_step_at,

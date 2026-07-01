@@ -8,13 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Plus, Calendar, Clock, Users2, ExternalLink, X, Copy } from "lucide-react";
+import { Video, Plus, Calendar, Clock, Users2, X, Copy, CalendarPlus, Pencil, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
-import { scheduleMeeting, cancelMeeting } from "@/lib/meetings.functions";
+import { scheduleMeeting, cancelMeeting, updateMeeting, completeMeeting } from "@/lib/meetings.functions";
 import { toast } from "sonner";
 import { MeetingRoom } from "@/components/meetings/meeting-room";
+import { downloadIcs } from "@/lib/ics";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   head: () => ({ meta: [{ title: "Meetings — CoreEgin Sales OS" }] }),
@@ -45,15 +46,19 @@ function toLocalInput(d: Date) {
 }
 
 function MeetingsPage() {
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const [meetings, setMeetings] = useState<MeetingRow[]>([]);
   const [profiles, setProfiles] = useState<Prof[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [joining, setJoining] = useState<MeetingRow | null>(null);
+  const [rescheduling, setRescheduling] = useState<MeetingRow | null>(null);
+  const [completing, setCompleting] = useState<MeetingRow | null>(null);
   const scheduleFn = useServerFn(scheduleMeeting);
   const cancelFn = useServerFn(cancelMeeting);
+  const updateFn = useServerFn(updateMeeting);
+  const completeFn = useServerFn(completeMeeting);
 
   async function refresh() {
     setLoading(true);
@@ -151,7 +156,15 @@ function MeetingsPage() {
           ) : (
             <div className="grid gap-3">
               {upcoming.map((m) => (
-                <MeetingCard key={m.id} m={m} currentUserId={user?.id ?? ""} onJoin={() => setJoining(m)} onCancel={() => onCancel(m.id)} />
+              <MeetingCard
+                key={m.id}
+                m={m}
+                currentUserId={user?.id ?? ""}
+                onJoin={() => setJoining(m)}
+                onCancel={() => onCancel(m.id)}
+                onReschedule={() => setRescheduling(m)}
+                onIcs={() => downloadFor(m)}
+              />
               ))}
             </div>
           )}
@@ -162,7 +175,17 @@ function MeetingsPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">Past</h2>
             <div className="grid gap-3">
               {past.map((m) => (
-                <MeetingCard key={m.id} m={m} currentUserId={user?.id ?? ""} onJoin={() => setJoining(m)} onCancel={() => onCancel(m.id)} isPast />
+              <MeetingCard
+                key={m.id}
+                m={m}
+                currentUserId={user?.id ?? ""}
+                onJoin={() => setJoining(m)}
+                onCancel={() => onCancel(m.id)}
+                onReschedule={() => setRescheduling(m)}
+                onIcs={() => downloadFor(m)}
+                onComplete={m.status !== "cancelled" && m.status !== "completed" ? () => setCompleting(m) : undefined}
+                isPast
+              />
               ))}
             </div>
           </section>
@@ -187,13 +210,61 @@ function MeetingsPage() {
       />
 
       {joining && (
-        <MeetingRoom meeting={joining} userName={user?.email?.split("@")[0] ?? "Guest"} onLeave={() => setJoining(null)} />
+        <MeetingRoom meeting={joining} userName={displayName} onLeave={() => setJoining(null)} />
       )}
+
+      <RescheduleDialog
+        meeting={rescheduling}
+        onClose={() => setRescheduling(null)}
+        onSubmit={async (payload) => {
+          try {
+            await updateFn({ data: payload });
+            toast.success("Meeting updated — attendees notified");
+            setRescheduling(null);
+            refresh();
+          } catch (e: any) { toast.error(e?.message ?? "Failed to update"); }
+        }}
+      />
+
+      <CompleteDialog
+        meeting={completing}
+        onClose={() => setCompleting(null)}
+        onSubmit={async (payload) => {
+          try {
+            await completeFn({ data: payload });
+            toast.success("Meeting notes saved to lead timeline");
+            setCompleting(null);
+            refresh();
+          } catch (e: any) { toast.error(e?.message ?? "Failed to save"); }
+        }}
+      />
     </div>
   );
+
+  function downloadFor(m: MeetingRow) {
+    downloadIcs({
+      uid: m.id,
+      title: m.title,
+      description: [m.description, m.daily_room_url ? `Join: ${m.daily_room_url}` : null].filter(Boolean).join("\n\n"),
+      location: m.daily_room_url ?? undefined,
+      startISO: m.start_at,
+      endISO: m.end_at,
+      url: m.daily_room_url,
+    });
+    toast.success("Calendar file downloaded");
+  }
 }
 
-function MeetingCard({ m, currentUserId, onJoin, onCancel, isPast }: { m: MeetingRow; currentUserId: string; onJoin: () => void; onCancel: () => void; isPast?: boolean }) {
+function MeetingCard({ m, currentUserId, onJoin, onCancel, onReschedule, onIcs, onComplete, isPast }: {
+  m: MeetingRow;
+  currentUserId: string;
+  onJoin: () => void;
+  onCancel: () => void;
+  onReschedule: () => void;
+  onIcs: () => void;
+  onComplete?: () => void;
+  isPast?: boolean;
+}) {
   const start = new Date(m.start_at);
   const end = new Date(m.end_at);
   const now = Date.now();
@@ -238,19 +309,34 @@ function MeetingCard({ m, currentUserId, onJoin, onCancel, isPast }: { m: Meetin
               <Video className="h-3.5 w-3.5" /> {canJoin ? "Join" : "Not yet"}
             </Button>
           )}
-          {m.daily_room_url && (
-            <button
-              onClick={() => { navigator.clipboard.writeText(m.daily_room_url!); toast.success("Link copied"); }}
-              className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-            >
-              <Copy className="h-3 w-3" /> Copy link
+          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+            {m.daily_room_url && (
+              <button
+                onClick={() => { navigator.clipboard.writeText(m.daily_room_url!); toast.success("Link copied"); }}
+                className="hover:text-foreground inline-flex items-center gap-1"
+              >
+                <Copy className="h-3 w-3" /> Copy
+              </button>
+            )}
+            <button onClick={onIcs} className="hover:text-foreground inline-flex items-center gap-1">
+              <CalendarPlus className="h-3 w-3" /> .ics
             </button>
-          )}
-          {isHost && m.status !== "cancelled" && !isPast && (
-            <button onClick={onCancel} className="text-[11px] text-muted-foreground hover:text-destructive inline-flex items-center gap-1">
-              <X className="h-3 w-3" /> Cancel
-            </button>
-          )}
+            {isHost && m.status !== "cancelled" && (
+              <button onClick={onReschedule} className="hover:text-foreground inline-flex items-center gap-1">
+                <Pencil className="h-3 w-3" /> Edit
+              </button>
+            )}
+            {isHost && m.status !== "cancelled" && !isPast && (
+              <button onClick={onCancel} className="hover:text-destructive inline-flex items-center gap-1">
+                <X className="h-3 w-3" /> Cancel
+              </button>
+            )}
+            {onComplete && (
+              <button onClick={onComplete} className="hover:text-primary inline-flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Notes
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

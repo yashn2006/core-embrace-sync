@@ -48,17 +48,19 @@ export function CsvImportDialog({
   profiles: Profile[];
   onDone: () => void;
 }) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isOwner = role === "owner";
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [filename, setFilename] = useState("");
   const [mapping, setMapping] = useState<Record<FieldKey, string>>({} as any);
   const [source, setSource] = useState<SourceKey>("cold_outreach");
-  const [assignTo, setAssignTo] = useState<string>("__unassigned__");
+  const [assignTo, setAssignTo] = useState<string>("__me__");
   const [importing, setImporting] = useState(false);
+  const [errors, setErrors] = useState<{ row: number; reason: string }[]>([]);
 
   function reset() {
-    setRows([]); setHeaders([]); setFilename(""); setMapping({} as any); setAssignTo("__unassigned__");
+    setRows([]); setHeaders([]); setFilename(""); setMapping({} as any); setAssignTo("__me__"); setErrors([]);
   }
 
   function handleFile(f: File) {
@@ -82,20 +84,30 @@ export function CsvImportDialog({
     if (!mapping.name) { toast.error("Map the Name column"); return; }
     if (rows.length === 0) { toast.error("No rows to import"); return; }
     setImporting(true);
+    setErrors([]);
     try {
-      const finalAssignee = assignTo === "__unassigned__" ? user.id : assignTo;
+      // Reps can only assign to themselves
+      const finalAssignee = !isOwner || assignTo === "__me__" ? user.id : assignTo;
       const { data: batch, error: batchErr } = await supabase
         .from("import_batches")
         .insert({ org_id: DEFAULT_ORG_ID, uploaded_by: user.id, assigned_to: finalAssignee, filename, row_count: rows.length })
         .select("*").single();
       if (batchErr) throw batchErr;
 
-      const payload = rows.map((r) => {
+      const collected: { row: number; reason: string }[] = [];
+      const payload: any[] = [];
+      rows.forEach((r, idx) => {
+        const name = (r[mapping.name] ?? "").toString().trim();
+        if (!name) { collected.push({ row: idx + 2, reason: "Missing name" }); return; }
         const dv = mapping.deal_value ? Number(String(r[mapping.deal_value]).replace(/[^0-9.]/g, "")) : null;
-        return {
+        const email = mapping.email ? (r[mapping.email] ?? "").toString().trim() : "";
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+          collected.push({ row: idx + 2, reason: `Invalid email "${email}"` });
+        }
+        payload.push({
           org_id: DEFAULT_ORG_ID,
-          name: (r[mapping.name] ?? "").toString().trim() || "Unnamed",
-          email: mapping.email ? r[mapping.email]?.toString().trim() || null : null,
+          name,
+          email: email || null,
           phone: mapping.phone ? r[mapping.phone]?.toString().trim() || null : null,
           company: mapping.company ? r[mapping.company]?.toString().trim() || null : null,
           description: mapping.description ? r[mapping.description]?.toString().trim() || null : null,
@@ -105,15 +117,25 @@ export function CsvImportDialog({
           assigned_to: finalAssignee,
           created_by: user.id,
           import_batch_id: batch.id,
-        };
+        });
       });
+
+      if (payload.length === 0) {
+        setErrors(collected);
+        throw new Error(`0 rows valid. ${collected.length} row(s) had errors.`);
+      }
 
       // Insert in chunks of 100
       for (let i = 0; i < payload.length; i += 100) {
         const { error } = await supabase.from("leads").insert(payload.slice(i, i + 100));
         if (error) throw error;
       }
-      toast.success(`Imported ${payload.length} leads`);
+      if (collected.length) {
+        setErrors(collected);
+        toast.success(`Imported ${payload.length}. Skipped ${collected.length}.`);
+      } else {
+        toast.success(`Imported ${payload.length} leads`);
+      }
       reset();
       onOpenChange(false);
       onDone();
@@ -166,13 +188,14 @@ export function CsvImportDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-muted-foreground">Assign entire batch to</Label>
-                <Select value={assignTo} onValueChange={setAssignTo}>
+                <Select value={assignTo} onValueChange={setAssignTo} disabled={!isOwner}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__unassigned__">Me (owner)</SelectItem>
-                    {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    <SelectItem value="__me__">Me</SelectItem>
+                    {isOwner && profiles.filter(p => p.id !== user?.id).map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {!isOwner && <div className="text-[10px] text-muted-foreground">Reps can only import to themselves.</div>}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-muted-foreground">Source tag</Label>
@@ -197,6 +220,16 @@ export function CsvImportDialog({
                         {mapping.email && ` · ${r[mapping.email]}`}
                       </span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {errors.length > 0 && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 max-h-32 overflow-y-auto">
+                <div className="text-[10px] uppercase tracking-wider text-destructive mb-1.5 font-medium">{errors.length} row(s) skipped</div>
+                <div className="space-y-0.5 text-xs">
+                  {errors.slice(0, 20).map((e, i) => (
+                    <div key={i}><span className="tabular text-muted-foreground">Row {e.row}:</span> {e.reason}</div>
                   ))}
                 </div>
               </div>

@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/stat-card";
 import { useAuth } from "@/hooks/use-auth";
 import { listLeads, listProfiles, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, STAGE_LABEL, SOURCES, type StageKey } from "@/lib/constants";
-import { Users, TrendingUp, Target, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock } from "lucide-react";
+import { formatDistanceToNow, isPast, isToday, isTomorrow } from "date-fns";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — CoreEgin Sales OS" }] }),
@@ -23,6 +25,18 @@ function DashboardPage() {
     listLeads().then(setLeads).catch(() => {});
     listProfiles().then(setProfiles).catch(() => {});
   }, []);
+
+  // Follow-up reminder toast — only mine, only overdue, once per session
+  useEffect(() => {
+    if (!user || leads.length === 0) return;
+    const key = `coreegin:followup-toast:${user.id}:${new Date().toDateString()}`;
+    if (typeof window === "undefined" || sessionStorage.getItem(key)) return;
+    const mineOverdue = leads.filter((l) => l.assigned_to === user.id && l.next_follow_up && isPast(new Date(l.next_follow_up)) && l.stage !== "won" && l.stage !== "lost");
+    if (mineOverdue.length > 0) {
+      toast.warning(`${mineOverdue.length} follow-up${mineOverdue.length > 1 ? "s" : ""} overdue`, { description: "Check the Follow-ups panel below.", duration: 6000 });
+      sessionStorage.setItem(key, "1");
+    }
+  }, [leads, user]);
 
   const stats = useMemo(() => {
     const active = leads.filter((l) => l.stage !== "won" && l.stage !== "lost");
@@ -61,6 +75,15 @@ function DashboardPage() {
   }, [profiles, leads]);
 
   const recent = useMemo(() => leads.slice(0, 6), [leads]);
+
+  const followUps = useMemo(() => {
+    const scope = isOwner ? leads : leads.filter((l) => l.assigned_to === user?.id);
+    const active = scope.filter((l) => l.next_follow_up && l.stage !== "won" && l.stage !== "lost");
+    const overdue = active.filter((l) => isPast(new Date(l.next_follow_up!)));
+    const upcoming = active.filter((l) => !isPast(new Date(l.next_follow_up!))).sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()).slice(0, 5);
+    return { overdue: overdue.sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()), upcoming };
+  }, [leads, user, isOwner]);
+
   const displayName = user?.email?.split("@")[0] ?? "there";
 
   return (
@@ -146,6 +169,57 @@ function DashboardPage() {
                 <div className="text-[10px] tabular text-muted-foreground">{formatDistanceToNow(new Date(l.updated_at), { addSuffix: true })}</div>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="surface p-5 animate-reveal">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className={"h-3.5 w-3.5 " + (followUps.overdue.length ? "text-destructive" : "text-muted-foreground")} />
+                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Overdue follow-ups</div>
+              </div>
+              <div className={"text-[11px] tabular font-semibold " + (followUps.overdue.length ? "text-destructive" : "text-muted-foreground")}>{followUps.overdue.length}</div>
+            </div>
+            {followUps.overdue.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-6 text-center">Nothing overdue. 🎯</div>
+            ) : (
+              <div className="space-y-1.5">
+                {followUps.overdue.slice(0, 6).map((l) => (
+                  <Link key={l.id} to="/leads" search={{ q: l.name, stage: "all", owner: "all" }} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/60 transition-colors">
+                    <div className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0 animate-pulse" />
+                    <div className="min-w-0 flex-1"><div className="text-sm font-medium truncate">{l.name}</div><div className="text-xs text-muted-foreground truncate">{l.company ?? STAGE_LABEL[l.stage as StageKey]}</div></div>
+                    <div className="text-[10px] tabular text-destructive shrink-0">{formatDistanceToNow(new Date(l.next_follow_up!), { addSuffix: true })}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="surface p-5 animate-reveal">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Upcoming</div>
+              </div>
+              <div className="text-[11px] tabular font-semibold text-muted-foreground">{followUps.upcoming.length}</div>
+            </div>
+            {followUps.upcoming.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-6 text-center">No follow-ups scheduled.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {followUps.upcoming.map((l) => {
+                  const d = new Date(l.next_follow_up!);
+                  const label = isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : formatDistanceToNow(d, { addSuffix: true });
+                  return (
+                    <Link key={l.id} to="/leads" search={{ q: l.name, stage: "all", owner: "all" }} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/60 transition-colors">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      <div className="min-w-0 flex-1"><div className="text-sm font-medium truncate">{l.name}</div><div className="text-xs text-muted-foreground truncate">{l.company ?? STAGE_LABEL[l.stage as StageKey]}</div></div>
+                      <div className="text-[10px] tabular text-primary shrink-0">{label}</div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

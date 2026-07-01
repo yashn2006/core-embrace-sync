@@ -1,35 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Upload } from "lucide-react";
+import { Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { listLeads, listProfiles, deleteLead, formatCurrency, type Lead, type Profile } from "@/lib/leads";
-import { STAGE_LABEL, type StageKey } from "@/lib/constants";
+import { STAGE_LABEL, STAGES, type StageKey } from "@/lib/constants";
 import { LeadDialog } from "@/components/leads/lead-dialog";
 import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet";
 import { CsvImportDialog } from "@/components/leads/csv-import-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
+const searchSchema = z.object({
+  q: fallback(z.string(), "").default(""),
+  stage: fallback(z.string(), "all").default("all"),
+  owner: fallback(z.string(), "all").default("all"),
+});
+
 export const Route = createFileRoute("/_authenticated/leads")({
   head: () => ({ meta: [{ title: "Leads — CoreEgin Sales OS" }] }),
+  validateSearch: zodValidator(searchSchema),
   component: LeadsPage,
 });
 
 function LeadsPage() {
   const { role } = useAuth();
   const isOwner = role === "owner";
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
   const [dialog, setDialog] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
   const [detail, setDetail] = useState<Lead | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
+
+  const setSearch = (patch: Partial<{ q: string; stage: string; owner: string }>) =>
+    navigate({ search: (prev: { q: string; stage: string; owner: string }) => ({ ...prev, ...patch }), replace: true });
 
   async function refresh() {
     setLoading(true);
@@ -42,12 +56,16 @@ function LeadsPage() {
   useEffect(() => { refresh(); }, []);
 
   const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    if (!t) return leads;
-    return leads.filter((l) =>
-      [l.name, l.company, l.email, l.phone].some((v) => v?.toLowerCase().includes(t)),
-    );
-  }, [leads, q]);
+    const t = search.q.trim().toLowerCase();
+    return leads.filter((l) => {
+      if (search.stage !== "all" && l.stage !== search.stage) return false;
+      if (search.owner !== "all" && l.assigned_to !== search.owner) return false;
+      if (t && ![l.name, l.company, l.email, l.phone, l.description].some((v) => v?.toLowerCase().includes(t))) return false;
+      return true;
+    });
+  }, [leads, search]);
+
+  const activeFilters = (search.stage !== "all" ? 1 : 0) + (search.owner !== "all" ? 1 : 0) + (search.q ? 1 : 0);
 
   const nameOf = (id: string | null) => profiles.find((p) => p.id === id)?.name ?? "—";
 
@@ -63,11 +81,9 @@ function LeadsPage() {
         description={isOwner ? "Every lead in the org. Assign, edit, work them." : "Your leads. Add, work, close."}
         actions={
           <div className="flex items-center gap-2">
-            {isOwner && (
-              <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
-                <Upload className="h-4 w-4 mr-1.5" />Import CSV
-              </Button>
-            )}
+            <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
+              <Upload className="h-4 w-4 mr-1.5" />Import CSV
+            </Button>
             <Button size="sm" onClick={() => setDialog({ open: true, lead: null })}>
               <Plus className="h-4 w-4 mr-1.5" />New lead
             </Button>
@@ -75,12 +91,33 @@ function LeadsPage() {
         }
       />
       <div className="p-6 md:p-8 space-y-4">
-        <div className="flex items-center gap-2 max-w-md">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search name, company, email…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input className="pl-9" placeholder="Search name, company, email, notes…" value={search.q} onChange={(e) => setSearch({ q: e.target.value })} />
           </div>
-          <div className="text-xs text-muted-foreground tabular whitespace-nowrap">{filtered.length} of {leads.length}</div>
+          <Select value={search.stage} onValueChange={(v) => setSearch({ stage: v })}>
+            <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All stages</SelectItem>
+              {STAGES.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {isOwner && (
+            <Select value={search.owner} onValueChange={(v) => setSearch({ owner: v })}>
+              <SelectTrigger className="h-9 w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All owners</SelectItem>
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          {activeFilters > 0 && (
+            <Button size="sm" variant="ghost" onClick={() => setSearch({ q: "", stage: "all", owner: "all" })}>
+              <X className="h-3.5 w-3.5 mr-1" />Clear
+            </Button>
+          )}
+          <div className="ml-auto text-xs text-muted-foreground tabular whitespace-nowrap">{filtered.length} of {leads.length}</div>
         </div>
 
         <div className="surface overflow-hidden">

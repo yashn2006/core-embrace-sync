@@ -21,6 +21,7 @@ export const savePushSubscription = createServerFn({ method: "POST" })
       .from("push_subscriptions")
       .upsert(
         {
+          org_id: "00000000-0000-0000-0000-000000000001",
           user_id: userId,
           endpoint: data.endpoint,
           p256dh: data.p256dh,

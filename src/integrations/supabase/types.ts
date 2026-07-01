@@ -65,6 +65,24 @@ export type Database = {
           },
         ]
       }
+      chat_reads: {
+        Row: {
+          channel_key: string
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_key: string
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_key?: string
+          last_seen_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       import_batches: {
         Row: {
           assigned_to: string | null
@@ -224,39 +242,61 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           channel_type: Database["public"]["Enums"]["channel_type"]
           content: string
           created_at: string
           id: string
           image_url: string | null
+          lead_id: string | null
           org_id: string
+          quick_tag: string | null
           read_at: string | null
           recipient_id: string | null
           sender_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_type: Database["public"]["Enums"]["channel_type"]
           content: string
           created_at?: string
           id?: string
           image_url?: string | null
+          lead_id?: string | null
           org_id: string
+          quick_tag?: string | null
           read_at?: string | null
           recipient_id?: string | null
           sender_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_type?: Database["public"]["Enums"]["channel_type"]
           content?: string
           created_at?: string
           id?: string
           image_url?: string | null
+          lead_id?: string | null
           org_id?: string
+          quick_tag?: string | null
           read_at?: string | null
           recipient_id?: string | null
           sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_org_id_fkey"
             columns: ["org_id"]

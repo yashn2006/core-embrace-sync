@@ -50,7 +50,7 @@ export function useChatUnread(): Counts & { refresh: () => void } {
   useEffect(() => {
     if (!user) return;
     tally();
-    const ch = supabase.channel("chat-unread-live")
+    const ch = supabase.channel(`chat-unread-${Math.random().toString(36).slice(2, 10)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => tally())
       .subscribe();
     const onSeen = () => tally();

@@ -149,16 +149,17 @@ function LeadsPage() {
                 <TableHead>Stage</TableHead>
                 <TableHead>Value</TableHead>
                 <TableHead>Owner</TableHead>
+                <TableHead>Progress</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && (
-                <TableRow><TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">Loading…</TableCell></TableRow>
               )}
               {!loading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
+                <TableRow><TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
                   No leads yet. Click <b>New lead</b> to get started.
                 </TableCell></TableRow>
               )}

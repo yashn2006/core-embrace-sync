@@ -7,6 +7,7 @@ import { Trophy, XCircle, Pencil, Building2, Mail, Phone, Calendar, User } from 
 import { formatCurrency, updateLead, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, type StageKey } from "@/lib/constants";
 import { ActivityTimeline } from "./activity-timeline";
+import { LeadChatPanel } from "./lead-chat-panel";
 import { WonDialog, LostDialog } from "./won-lost-dialog";
 import { QuickStatusBar } from "./quick-status-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,11 +92,15 @@ export function LeadDetailSheet({
             <Tabs defaultValue="timeline">
               <TabsList>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="details">Details</TabsTrigger>
               </TabsList>
               <TabsContent value="timeline" className="mt-4 space-y-4">
                 <QuickStatusBar leadId={lead.id} onDone={onChanged} />
                 <ActivityTimeline leadId={lead.id} profiles={profiles} />
+              </TabsContent>
+              <TabsContent value="chat" className="mt-4">
+                <LeadChatPanel leadId={lead.id} leadName={lead.name} profiles={profiles} />
               </TabsContent>
               <TabsContent value="details" className="mt-4 space-y-3 text-sm">
                 <DetailLine k="Description" v={lead.description ?? "—"} />

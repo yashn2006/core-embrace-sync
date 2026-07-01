@@ -16,6 +16,22 @@ export const STAGE_LABEL: Record<StageKey, string> = Object.fromEntries(
 
 export const PIPELINE_STAGES = STAGES.filter((s) => s.key !== "lost");
 
+// Stages that appear on the drag-and-drop board by default (active work only).
+export const ACTIVE_STAGES = STAGES.filter(
+  (s) => s.key !== "won" && s.key !== "lost",
+);
+
+// Visual accent per stage — used by pipeline column headers and lead badges.
+export const STAGE_ACCENT: Record<StageKey, { dot: string; bg: string; text: string; ring: string; label: string }> = {
+  new:               { dot: "bg-slate-400",   bg: "bg-slate-50",   text: "text-slate-700",   ring: "ring-slate-200",   label: "New" },
+  contacted:         { dot: "bg-sky-400",     bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",     label: "Contacted" },
+  interested:        { dot: "bg-violet-400",  bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200",  label: "Warm" },
+  meeting_scheduled: { dot: "bg-amber-400",   bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",   label: "Meeting" },
+  proposal_sent:    { dot: "bg-primary",     bg: "bg-primary/10", text: "text-primary",     ring: "ring-primary/30",  label: "Proposal" },
+  won:               { dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", label: "Won" },
+  lost:              { dot: "bg-rose-400",    bg: "bg-rose-50",    text: "text-rose-700",    ring: "ring-rose-200",    label: "Lost" },
+};
+
 export const SOURCES = [
   { key: "website", label: "Website" },
   { key: "referral", label: "Referral" },

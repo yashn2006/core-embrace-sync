@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, EyeOff, Trophy, XCircle } from "lucide-react";
+import { Plus, Eye, EyeOff } from "lucide-react";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { listLeads, listProfiles, updateLead, logActivity, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, ACTIVE_STAGES, STAGE_ACCENT, STAGE_LABEL, type StageKey } from "@/lib/constants";

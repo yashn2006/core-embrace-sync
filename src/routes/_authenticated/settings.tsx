@@ -9,11 +9,41 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Camera, Loader2, Shield, User as UserIcon, KeyRound, LogOut, Trash2, Bell, BellOff } from "lucide-react";
 import { currentFollowupPermission, requestFollowupPermission } from "@/hooks/use-followup-notifications";
+import { usePushSubscription } from "@/hooks/use-push-subscription";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — CoreEgin Sales OS" }] }),
   component: SettingsPage,
 });
+
+function BackgroundPushSection() {
+  const { status, subscribed, subscribe, unsubscribe } = usePushSubscription();
+  return (
+    <section className="surface p-6 space-y-3 animate-reveal">
+      <div className="flex items-center gap-2">
+        {subscribed ? <Bell className="h-3.5 w-3.5 text-primary" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />}
+        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Background push (offline)</div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Real device push — get meeting reminders and lead pings even when the app is closed. One-time browser permission.
+      </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs">
+          Status: <span className={subscribed ? "text-primary font-medium" : "text-muted-foreground"}>
+            {status === "unsupported" ? "Not supported on this device"
+              : status === "denied" ? "Blocked by browser"
+              : subscribed ? "Subscribed on this device" : "Off"}
+          </span>
+        </div>
+        {status !== "unsupported" && status !== "denied" && (
+          subscribed
+            ? <Button size="sm" variant="outline" onClick={unsubscribe}>Unsubscribe</Button>
+            : <Button size="sm" onClick={subscribe}><Bell className="h-3.5 w-3.5 mr-1.5" />Enable device push</Button>
+        )}
+      </div>
+    </section>
+  );
+}
 
 function SettingsPage() {
   const { user, role, signOut } = useAuth();
@@ -192,6 +222,8 @@ function SettingsPage() {
             )}
           </div>
         </section>
+
+        <BackgroundPushSection />
 
         <section className="surface p-6 space-y-3 animate-reveal">
           <div className="flex items-center gap-2">

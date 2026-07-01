@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,16 +66,35 @@ export function CsvImportDialog({
 
   function handleFile(f: File) {
     setFilename(f.name);
-    Papa.parse<Record<string, string>>(f, {
-      header: true, skipEmptyLines: true,
-      complete: (res) => {
-        const heads = res.meta.fields ?? [];
-        setHeaders(heads);
-        setRows(res.data);
-        setMapping(guessMapping(heads));
-      },
-      error: (e) => toast.error(e.message),
-    });
+    const ext = f.name.toLowerCase().split(".").pop();
+    if (ext === "xlsx" || ext === "xls") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const wb = XLSX.read(data, { type: "array" });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "", raw: false });
+          const heads = json.length ? Object.keys(json[0]) : [];
+          const stringed = json.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v ?? "")])));
+          setHeaders(heads);
+          setRows(stringed);
+          setMapping(guessMapping(heads));
+        } catch (err: any) { toast.error(err.message ?? "Could not read Excel file"); }
+      };
+      reader.readAsArrayBuffer(f);
+    } else {
+      Papa.parse<Record<string, string>>(f, {
+        header: true, skipEmptyLines: true,
+        complete: (res) => {
+          const heads = res.meta.fields ?? [];
+          setHeaders(heads);
+          setRows(res.data);
+          setMapping(guessMapping(heads));
+        },
+        error: (e) => toast.error(e.message),
+      });
+    }
   }
 
   const preview = useMemo(() => rows.slice(0, 3), [rows]);
@@ -157,9 +177,9 @@ export function CsvImportDialog({
         {rows.length === 0 ? (
           <label className="block border-2 border-dashed border-hairline rounded-xl p-10 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/[.02] transition-colors">
             <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-            <div className="text-sm font-medium">Drop CSV or click to upload</div>
+            <div className="text-sm font-medium">Drop CSV / Excel or click to upload</div>
             <div className="text-xs text-muted-foreground mt-1">First row must be column headers</div>
-            <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            <input type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </label>
         ) : (
           <div className="space-y-4">

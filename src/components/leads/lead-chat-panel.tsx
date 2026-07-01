@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { DEFAULT_ORG_ID } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
 import type { Profile } from "@/lib/leads";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SignedAvatarImage } from "@/components/signed-image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Tag, X, MessageSquare } from "lucide-react";
@@ -74,7 +75,7 @@ export function LeadChatPanel({ leadId, leadName, profiles }: { leadId: string; 
           return (
             <div key={m.id} className={"flex gap-2 " + (mine ? "flex-row-reverse" : "")}>
               <Avatar className="h-6 w-6 shrink-0">
-                <AvatarImage src={p?.avatar_url ?? undefined} />
+                <SignedAvatarImage bucket="avatars" path={p?.avatar_url} />
                 <AvatarFallback className="text-[9px] text-white" style={{ background: mine ? "var(--gradient-magenta)" : "oklch(0.65 0.02 340)" }}>
                   {nameOf(m.sender_id).slice(0, 1).toUpperCase()}
                 </AvatarFallback>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { listLeads, listProfiles, type Lead, type Profile } from "@/lib/leads";
@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { channelKey, markChannelSeen, useChatUnread } from "@/hooks/use-chat-unread";
 import { QUICK_STATUSES, applyQuickStatus } from "@/lib/quick-status";
+import { SignedAvatarImage, SignedImage, SignedLink } from "@/components/signed-image";
+import { encodeStoragePath } from "@/lib/signed-url";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 type ChannelSel = { type: "team" } | { type: "direct"; peerId: string };
@@ -97,10 +99,11 @@ function ChatPage() {
         const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error: upErr } = await supabase.storage.from("chat-attachments").upload(path, pendingFile);
         if (upErr) throw upErr;
-        const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrl(path, 60 * 60 * 24 * 365);
-        if (pendingFile.type.startsWith("image/")) imageUrl = signed?.signedUrl ?? null;
+        // Persist ONLY the storage path — signed URLs are minted per-read with a short TTL.
+        const stored = encodeStoragePath("chat-attachments", path);
+        if (pendingFile.type.startsWith("image/")) imageUrl = stored;
         else {
-          attachmentUrl = signed?.signedUrl ?? null;
+          attachmentUrl = stored;
           attachmentName = pendingFile.name;
           attachmentType = pendingFile.type || ext;
         }
@@ -199,7 +202,7 @@ function ChatPage() {
               ) : (
                 <>
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={currentPeer?.avatar_url ?? undefined} />
+                    <SignedAvatarImage bucket="avatars" path={currentPeer?.avatar_url} />
                     <AvatarFallback className="text-[10px] text-white" style={{ background: "var(--gradient-magenta)" }}>
                       {currentPeer?.name.slice(0, 1).toUpperCase()}
                     </AvatarFallback>
@@ -219,7 +222,7 @@ function ChatPage() {
                 return (
                   <div key={m.id} className={"flex gap-2 " + (mine ? "flex-row-reverse" : "")}>
                     <Avatar className="h-7 w-7 shrink-0">
-                      <AvatarImage src={senderProfile?.avatar_url ?? undefined} />
+                      <SignedAvatarImage bucket="avatars" path={senderProfile?.avatar_url} />
                       <AvatarFallback className="text-[10px] text-white font-medium" style={{ background: mine ? "var(--gradient-magenta)" : "oklch(0.65 0.02 340)" }}>
                         {nameOf(m.sender_id).slice(0, 1).toUpperCase()}
                       </AvatarFallback>
@@ -232,16 +235,16 @@ function ChatPage() {
                       </div>
                       <div className={"inline-block rounded-2xl px-3.5 py-2 text-sm text-left " + (mine ? "text-white" : "bg-muted text-foreground")} style={mine ? { background: "var(--gradient-magenta)" } : undefined}>
                         {(m as any).image_url && (
-                          <a href={(m as any).image_url} target="_blank" rel="noreferrer" className="block mb-1">
-                            <img src={(m as any).image_url} alt="attachment" className="rounded-lg max-h-64 max-w-full object-cover" />
-                          </a>
+                          <SignedLink bucket="chat-attachments" path={(m as any).image_url} target="_blank" rel="noreferrer" className="block mb-1">
+                            <SignedImage bucket="chat-attachments" path={(m as any).image_url} alt="attachment" className="rounded-lg max-h-64 max-w-full object-cover" />
+                          </SignedLink>
                         )}
                         {(m as any).attachment_url && (
-                          <a href={(m as any).attachment_url} target="_blank" rel="noreferrer"
+                          <SignedLink bucket="chat-attachments" path={(m as any).attachment_url} target="_blank" rel="noreferrer"
                             className={"flex items-center gap-2 rounded-lg px-2 py-1.5 mb-1 " + (mine ? "bg-white/15 hover:bg-white/25" : "bg-background/70 hover:bg-background")}>
                             <FileText className="h-4 w-4 shrink-0" />
                             <span className="text-xs truncate">{(m as any).attachment_name}</span>
-                          </a>
+                          </SignedLink>
                         )}
                         {m.content && <div className="whitespace-pre-wrap break-words">{m.content}</div>}
                         {(tag || lead) && (
@@ -329,7 +332,7 @@ function ChannelBtn({ active, onClick, icon, label, profile, unread }: {
         (active ? "bg-primary/10 text-foreground font-medium" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground")}>
       {profile ? (
         <Avatar className="h-6 w-6 shrink-0">
-          <AvatarImage src={profile.avatar_url ?? undefined} />
+          <SignedAvatarImage bucket="avatars" path={profile.avatar_url} />
           <AvatarFallback className="text-[10px] text-white" style={{ background: "var(--gradient-magenta)" }}>
             {profile.name.slice(0, 1).toUpperCase()}
           </AvatarFallback>

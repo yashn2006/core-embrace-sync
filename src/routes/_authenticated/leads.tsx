@@ -4,11 +4,12 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2, Upload } from "lucide-react";
 import { listLeads, listProfiles, deleteLead, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, type StageKey } from "@/lib/constants";
 import { LeadDialog } from "@/components/leads/lead-dialog";
 import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet";
+import { CsvImportDialog } from "@/components/leads/csv-import-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ function LeadsPage() {
   const [q, setQ] = useState("");
   const [dialog, setDialog] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
   const [detail, setDetail] = useState<Lead | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -60,9 +62,16 @@ function LeadsPage() {
         title="Leads"
         description={isOwner ? "Every lead in the org. Assign, edit, work them." : "Your leads. Add, work, close."}
         actions={
-          <Button size="sm" onClick={() => setDialog({ open: true, lead: null })}>
-            <Plus className="h-4 w-4 mr-1.5" />New lead
-          </Button>
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
+                <Upload className="h-4 w-4 mr-1.5" />Import CSV
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setDialog({ open: true, lead: null })}>
+              <Plus className="h-4 w-4 mr-1.5" />New lead
+            </Button>
+          </div>
         }
       />
       <div className="p-6 md:p-8 space-y-4">
@@ -134,6 +143,7 @@ function LeadsPage() {
         onEdit={(l) => { setDetail(null); setDialog({ open: true, lead: l }); }}
         onChanged={() => { refresh(); if (detail) listLeads().then((l) => setDetail(l.find((x) => x.id === detail.id) ?? null)); }}
       />
+      <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} profiles={profiles} onDone={refresh} />
     </>
   );
 }

@@ -16,6 +16,7 @@ import { scheduleMeeting, cancelMeeting, updateMeeting, completeMeeting } from "
 import { toast } from "sonner";
 import { MeetingRoom } from "@/components/meetings/meeting-room";
 import { downloadIcs } from "@/lib/ics";
+import { SignedImage } from "@/components/signed-image";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   head: () => ({ meta: [{ title: "Meetings — CoreEgin Sales OS" }] }),

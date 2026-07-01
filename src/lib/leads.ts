@@ -50,7 +50,18 @@ export async function createLead(input: LeadInput, userId: string) {
 }
 
 export async function updateLead(id: string, patch: Partial<LeadInput> & { won_at?: string | null; lost_at?: string | null; handoff_note?: string | null }) {
-  const { data, error } = await supabase.from("leads").update(patch).eq("id", id).select("*").single();
+  const { data, error } = await supabase.from("leads").update(patch as never).eq("id", id).select("*").single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateLeadCustomStatus(id: string, status: string | null) {
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ custom_status: status } as never)
+    .eq("id", id)
+    .select("*")
+    .single();
   if (error) throw error;
   return data;
 }

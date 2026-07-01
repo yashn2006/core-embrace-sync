@@ -228,6 +228,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_url: string | null
           org_id: string
           read_at: string | null
           recipient_id: string | null
@@ -238,6 +239,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_url?: string | null
           org_id: string
           read_at?: string | null
           recipient_id?: string | null
@@ -248,6 +250,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           org_id?: string
           read_at?: string | null
           recipient_id?: string | null

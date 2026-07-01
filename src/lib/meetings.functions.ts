@@ -171,7 +171,9 @@ export const updateMeeting = createServerFn({ method: "POST" })
       .single();
     if (bErr) throw new Error(bErr.message);
 
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      title?: string; description?: string | null; start_at?: string; end_at?: string;
+    } = {};
     if (data.title !== undefined) patch.title = data.title.trim();
     if (data.description !== undefined) patch.description = data.description;
     if (data.start_at) patch.start_at = data.start_at;

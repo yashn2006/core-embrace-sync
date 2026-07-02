@@ -6,8 +6,9 @@ import { StatCard } from "@/components/app/stat-card";
 import { useAuth } from "@/hooks/use-auth";
 import { listLeads, listProfiles, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, STAGE_LABEL, SOURCES, type StageKey } from "@/lib/constants";
-import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign, Activity, Trophy } from "lucide-react";
-import { formatDistanceToNow, isPast, isToday, isTomorrow, startOfWeek, addWeeks, format, isAfter } from "date-fns";
+import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign, Activity, Trophy, Flame, Zap, Rocket, Crown } from "lucide-react";
+import { formatDistanceToNow, isPast, isToday, isTomorrow, startOfWeek, addWeeks, format, isAfter, differenceInDays, startOfMonth } from "date-fns";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -116,6 +117,46 @@ function DashboardPage() {
     const upcoming = active.filter((l) => !isPast(new Date(l.next_follow_up!))).sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()).slice(0, 5);
     return { overdue: overdue.sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()), upcoming };
   }, [leads, user, isOwner]);
+
+  // ============ REP-ONLY SALES FOCUS ============
+  const salesFocus = useMemo(() => {
+    if (isOwner || !user) return null;
+    const mine = leads.filter((l) => l.assigned_to === user.id);
+    const active = mine.filter((l) => l.stage !== "won" && l.stage !== "lost");
+    const now = new Date();
+    // Streak — unique days I updated any lead, back from today
+    const days = new Set(mine.map((l) => format(new Date(l.updated_at), "yyyy-MM-dd")));
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      const d = format(addWeeks(now, 0).setDate ? new Date(now.getTime() - i * 86400000) : now, "yyyy-MM-dd");
+      if (days.has(d)) streak++; else break;
+    }
+    // Momentum — % of active leads touched in last 7d
+    const week = now.getTime() - 7 * 86400000;
+    const touched = active.filter((l) => new Date(l.updated_at).getTime() >= week).length;
+    const momentum = active.length ? Math.round((touched / active.length) * 100) : 0;
+    // This month won
+    const monthStart = startOfMonth(now);
+    const monthWon = mine.filter((l) => l.stage === "won" && new Date(l.updated_at) >= monthStart);
+    const monthWonValue = monthWon.reduce((s, l) => s + (l.deal_value ?? 0), 0);
+    // Leaderboard position (by monthly wins across reps)
+    const board = profiles.map((p) => {
+      const wins = leads.filter((l) => l.assigned_to === p.id && l.stage === "won" && new Date(l.updated_at) >= monthStart);
+      return { id: p.id, name: p.name, count: wins.length, value: wins.reduce((s, l) => s + (l.deal_value ?? 0), 0) };
+    }).sort((a, b) => b.value - a.value || b.count - a.count);
+    const rank = board.findIndex((b) => b.id === user.id) + 1;
+    const leader = board[0];
+    // Top 3 focus leads: score = overdue*3 + high progress + high value tie-breaker
+    const scored = active.map((l) => {
+      const overdueDays = l.next_follow_up ? Math.max(0, differenceInDays(now, new Date(l.next_follow_up))) : 0;
+      const staleDays = Math.max(0, differenceInDays(now, new Date(l.updated_at)));
+      const prog = (l as any).progress ?? 0;
+      const val = l.deal_value ?? 0;
+      const score = overdueDays * 12 + staleDays * 1.5 + prog * 0.6 + Math.min(val / 500, 30);
+      return { lead: l, score, overdueDays, staleDays };
+    }).sort((a, b) => b.score - a.score).slice(0, 3);
+    return { streak, momentum, monthWon: monthWon.length, monthWonValue, rank, boardSize: board.length, leader, focus: scored };
+  }, [leads, profiles, user, isOwner]);
 
   // displayName from auth context above
 

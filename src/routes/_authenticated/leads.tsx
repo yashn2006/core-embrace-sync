@@ -6,8 +6,10 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Upload, X, UserCheck, Sparkles } from "lucide-react";
+import { Plus, Search, Trash2, Upload, X, UserCheck, Sparkles, SlidersHorizontal } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { listLeads, listProfiles, deleteLead, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, STAGE_ACCENT, type StageKey } from "@/lib/constants";
@@ -25,6 +27,11 @@ const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
   stage: fallback(z.string(), "all").default("all"),
   owner: fallback(z.string(), "all").default("all"),
+  vmin: fallback(z.string(), "").default(""),
+  vmax: fallback(z.string(), "").default(""),
+  pmin: fallback(z.string(), "").default(""),
+  cstatus: fallback(z.string(), "any").default("any"), // any | with | without
+  sort: fallback(z.string(), "updated").default("updated"), // updated | value | progress | name
 });
 
 export const Route = createFileRoute("/_authenticated/leads")({
@@ -49,7 +56,7 @@ function LeadsPage() {
   const [bulkAssignee, setBulkAssignee] = useState<string>("");
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const setSearch = (patch: Partial<{ q: string; stage: string; owner: string }>) =>
+  const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
     navigate({ search: (prev: { q: string; stage: string; owner: string }) => ({ ...prev, ...patch }), replace: true });
 
   async function refresh() {
@@ -64,15 +71,34 @@ function LeadsPage() {
 
   const filtered = useMemo(() => {
     const t = search.q.trim().toLowerCase();
-    return leads.filter((l) => {
+    const vmin = search.vmin ? Number(search.vmin) : null;
+    const vmax = search.vmax ? Number(search.vmax) : null;
+    const pmin = search.pmin ? Number(search.pmin) : null;
+    const arr = leads.filter((l) => {
       if (search.stage !== "all" && l.stage !== search.stage) return false;
       if (search.owner !== "all" && l.assigned_to !== search.owner) return false;
+      if (vmin != null && (l.deal_value ?? 0) < vmin) return false;
+      if (vmax != null && (l.deal_value ?? 0) > vmax) return false;
+      const prog = (l as any).progress ?? 0;
+      if (pmin != null && prog < pmin) return false;
+      const cs = (l as any).custom_status;
+      if (search.cstatus === "with" && !cs) return false;
+      if (search.cstatus === "without" && cs) return false;
       if (t && ![l.name, l.company, l.email, l.phone, l.description].some((v) => v?.toLowerCase().includes(t))) return false;
       return true;
     });
+    const s = search.sort;
+    arr.sort((a, b) => {
+      if (s === "value") return (b.deal_value ?? 0) - (a.deal_value ?? 0);
+      if (s === "progress") return (((b as any).progress ?? 0) - ((a as any).progress ?? 0));
+      if (s === "name") return a.name.localeCompare(b.name);
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+    return arr;
   }, [leads, search]);
 
-  const activeFilters = (search.stage !== "all" ? 1 : 0) + (search.owner !== "all" ? 1 : 0) + (search.q ? 1 : 0);
+  const advCount = (search.vmin ? 1 : 0) + (search.vmax ? 1 : 0) + (search.pmin ? 1 : 0) + (search.cstatus !== "any" ? 1 : 0) + (search.sort !== "updated" ? 1 : 0);
+  const activeFilters = (search.stage !== "all" ? 1 : 0) + (search.owner !== "all" ? 1 : 0) + (search.q ? 1 : 0) + advCount;
   const unassignedCount = useMemo(() => leads.filter((l) => !l.assigned_to).length, [leads]);
 
   const nameOf = (id: string | null) => profiles.find((p) => p.id === id)?.name ?? "—";
@@ -175,8 +201,61 @@ function LeadsPage() {
               </SelectContent>
             </Select>
           )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" className="h-9 relative">
+                <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />More filters
+                {advCount > 0 && <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-[9px] font-semibold text-white flex items-center justify-center">{advCount}</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 space-y-3" align="end">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Advanced</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px] uppercase">Value ≥</Label>
+                  <Input type="number" placeholder="0" value={search.vmin} onChange={(e) => setSearch({ vmin: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase">Value ≤</Label>
+                  <Input type="number" placeholder="∞" value={search.vmax} onChange={(e) => setSearch({ vmax: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase">Progress ≥ (%)</Label>
+                <Input type="number" min={0} max={100} placeholder="0" value={search.pmin} onChange={(e) => setSearch({ pmin: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase">Custom status</Label>
+                <Select value={search.cstatus} onValueChange={(v) => setSearch({ cstatus: v })}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="with">Has custom status</SelectItem>
+                    <SelectItem value="without">No custom status</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase">Sort by</Label>
+                <Select value={search.sort} onValueChange={(v) => setSearch({ sort: v })}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="updated">Recently updated</SelectItem>
+                    <SelectItem value="value">Deal value (high → low)</SelectItem>
+                    <SelectItem value="progress">Progress (high → low)</SelectItem>
+                    <SelectItem value="name">Name (A → Z)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {advCount > 0 && (
+                <Button size="sm" variant="ghost" className="w-full" onClick={() => setSearch({ vmin: "", vmax: "", pmin: "", cstatus: "any", sort: "updated" })}>
+                  <X className="h-3.5 w-3.5 mr-1" />Clear advanced
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
           {activeFilters > 0 && (
-            <Button size="sm" variant="ghost" onClick={() => setSearch({ q: "", stage: "all", owner: "all" })}>
+            <Button size="sm" variant="ghost" onClick={() => setSearch({ q: "", stage: "all", owner: "all", vmin: "", vmax: "", pmin: "", cstatus: "any", sort: "updated" })}>
               <X className="h-3.5 w-3.5 mr-1" />Clear
             </Button>
           )}

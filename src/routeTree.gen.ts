@@ -23,6 +23,7 @@ import { Route as AuthenticatedLeadLogsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
+import { Route as AuthenticatedDigestRouteImport } from './routes/_authenticated/digest'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
@@ -99,6 +100,11 @@ const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
   path: '/earnings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDigestRoute = AuthenticatedDigestRouteImport.update({
+  id: '/digest',
+  path: '/digest',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/digest': typeof AuthenticatedDigestRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/digest': typeof AuthenticatedDigestRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/digest': typeof AuthenticatedDigestRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/coach'
     | '/dashboard'
+    | '/digest'
     | '/earnings'
     | '/health'
     | '/inbox'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/coach'
     | '/dashboard'
+    | '/digest'
     | '/earnings'
     | '/health'
     | '/inbox'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/coach'
     | '/_authenticated/dashboard'
+    | '/_authenticated/digest'
     | '/_authenticated/earnings'
     | '/_authenticated/health'
     | '/_authenticated/inbox'
@@ -358,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEarningsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/digest': {
+      id: '/_authenticated/digest'
+      path: '/digest'
+      fullPath: '/digest'
+      preLoaderRoute: typeof AuthenticatedDigestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -401,6 +420,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDigestRoute: typeof AuthenticatedDigestRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
@@ -420,6 +440,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDigestRoute: AuthenticatedDigestRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,

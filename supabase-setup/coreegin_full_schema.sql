@@ -1,10 +1,10 @@
 
 -- ============ ENUMS ============
-CREATE TYPE public.app_role AS ENUM ('owner', 'rep');
-CREATE TYPE public.lead_stage AS ENUM ('new', 'contacted', 'interested', 'meeting_scheduled', 'proposal_sent', 'won', 'lost');
-CREATE TYPE public.lead_source AS ENUM ('website', 'referral', 'cold_outreach', 'linkedin', 'whatsapp', 'other');
-CREATE TYPE public.activity_type AS ENUM ('call', 'email', 'whatsapp', 'meeting', 'note');
-CREATE TYPE public.channel_type AS ENUM ('team', 'direct');
+DO $$ BEGIN CREATE TYPE public.app_role AS ENUM ('owner', 'rep'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.lead_stage AS ENUM ('new', 'contacted', 'interested', 'meeting_scheduled', 'proposal_sent', 'won', 'lost'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.lead_source AS ENUM ('website', 'referral', 'cold_outreach', 'linkedin', 'whatsapp', 'other'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.activity_type AS ENUM ('call', 'email', 'whatsapp', 'meeting', 'note'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.channel_type AS ENUM ('team', 'direct'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============ UPDATED_AT TRIGGER ============
 CREATE OR REPLACE FUNCTION public.set_updated_at()

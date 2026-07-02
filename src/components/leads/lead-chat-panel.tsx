@@ -8,10 +8,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SignedAvatarImage } from "@/components/signed-image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Tag, X, MessageSquare } from "lucide-react";
+import { Send, Tag, X, MessageSquare, FileText } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { QUICK_STATUSES, applyQuickStatus } from "@/lib/quick-status";
+import { listTemplates, renderTemplate, type MessageTemplate } from "@/lib/templates";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 
@@ -22,6 +24,8 @@ export function LeadChatPanel({ leadId, leadName, profiles }: { leadId: string; 
   const [input, setInput] = useState("");
   const [tag, setTag] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [tplOpen, setTplOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +39,17 @@ export function LeadChatPanel({ leadId, leadName, profiles }: { leadId: string; 
   }, [leadId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  useEffect(() => {
+    listTemplates().then(setTemplates).catch(() => {});
+  }, []);
+
+  function insertTemplate(t: MessageTemplate) {
+    const first = leadName.split(/\s+/)[0] ?? leadName;
+    const rendered = renderTemplate(t.body, { name: leadName, first_name: first, company: "" });
+    setInput((prev) => (prev ? prev + "\n\n" + rendered : rendered));
+    setTplOpen(false);
+  }
 
   async function send() {
     if (!user) return;
@@ -106,6 +121,27 @@ export function LeadChatPanel({ leadId, leadName, profiles }: { leadId: string; 
           <Input value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !busy) { e.preventDefault(); send(); } }}
             placeholder="Post an update about this lead…" disabled={busy} className="h-9" />
+          <Popover open={tplOpen} onOpenChange={setTplOpen}>
+            <PopoverTrigger asChild>
+              <Button size="icon" variant="outline" className="h-9 w-9" title="Insert template" disabled={templates.length === 0}>
+                <FileText className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0 max-h-80 overflow-y-auto">
+              <div className="p-2 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-hairline">Insert template</div>
+              {templates.length === 0 && <div className="p-3 text-xs text-muted-foreground">No templates yet.</div>}
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => insertTemplate(t)}
+                  className="w-full text-left px-3 py-2 hover:bg-muted transition-colors border-b border-hairline/60 last:border-0"
+                >
+                  <div className="text-xs font-medium">{t.title}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{t.category} · {t.body.slice(0, 60)}</div>
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
           <Button size="icon" className="h-9 w-9" onClick={send} disabled={busy || (!input.trim() && !tag)}><Send className="h-4 w-4" /></Button>
         </div>
       </div>

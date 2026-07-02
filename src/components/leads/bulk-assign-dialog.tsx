@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listLeads, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, type StageKey } from "@/lib/constants";
 import { toast } from "sonner";
-import { Search, UserCheck, Users2 } from "lucide-react";
+import { Search, UserCheck, Users2, Shuffle } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -26,6 +26,7 @@ export function BulkAssignDialog({ open, onOpenChange, profiles, presetRepId, pr
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [assignee, setAssignee] = useState<string>(presetRepId ?? "");
+  const [roundRobin, setRoundRobin] = useState<boolean>(false);
   const [scope, setScope] = useState<"unassigned" | "all">("unassigned");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -60,15 +61,31 @@ export function BulkAssignDialog({ open, onOpenChange, profiles, presetRepId, pr
   }
 
   async function submit() {
-    if (!assignee) return toast.error("Pick a rep");
+    if (!roundRobin && !assignee) return toast.error("Pick a rep");
+    if (roundRobin && profiles.length === 0) return toast.error("No reps to round-robin across");
     if (selected.size === 0) return toast.error("Select at least one lead");
     setSaving(true);
     try {
       const ids = Array.from(selected);
-      const { error } = await supabase.from("leads").update({ assigned_to: assignee }).in("id", ids);
-      if (error) throw error;
-      const repName = profiles.find((p) => p.id === assignee)?.name ?? "rep";
-      toast.success(`Assigned ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${repName}`);
+      if (roundRobin) {
+        const reps = profiles.map((p) => p.id);
+        // Distribute in a rotation
+        const grouped: Record<string, string[]> = {};
+        ids.forEach((id, i) => {
+          const r = reps[i % reps.length];
+          (grouped[r] ??= []).push(id);
+        });
+        for (const [rep, leadIds] of Object.entries(grouped)) {
+          const { error } = await supabase.from("leads").update({ assigned_to: rep }).in("id", leadIds);
+          if (error) throw error;
+        }
+        toast.success(`Round-robin: distributed ${ids.length} lead${ids.length === 1 ? "" : "s"} across ${reps.length} rep${reps.length === 1 ? "" : "s"}`);
+      } else {
+        const { error } = await supabase.from("leads").update({ assigned_to: assignee }).in("id", ids);
+        if (error) throw error;
+        const repName = profiles.find((p) => p.id === assignee)?.name ?? "rep";
+        toast.success(`Assigned ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${repName}`);
+      }
       onOpenChange(false);
       onDone?.();
     } catch (e: any) {
@@ -97,9 +114,12 @@ export function BulkAssignDialog({ open, onOpenChange, profiles, presetRepId, pr
           {!presetRepId && (
             <div className="space-y-1.5">
               <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Assign to</Label>
-              <Select value={assignee} onValueChange={setAssignee}>
+              <Select value={roundRobin ? "__rr__" : assignee} onValueChange={(v) => { if (v === "__rr__") { setRoundRobin(true); } else { setRoundRobin(false); setAssignee(v); } }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Pick a rep" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__rr__">
+                    <span className="flex items-center gap-2"><Shuffle className="h-3.5 w-3.5 text-primary" />Round-robin across all reps</span>
+                  </SelectItem>
                   {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -147,8 +167,8 @@ export function BulkAssignDialog({ open, onOpenChange, profiles, presetRepId, pr
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={saving || selected.size === 0 || !assignee}>
-            <UserCheck className="h-4 w-4 mr-1.5" />
+          <Button onClick={submit} disabled={saving || selected.size === 0 || (!roundRobin && !assignee)}>
+            {roundRobin ? <Shuffle className="h-4 w-4 mr-1.5" /> : <UserCheck className="h-4 w-4 mr-1.5" />}
             {saving ? "Assigning…" : `Assign ${selected.size || ""} lead${selected.size === 1 ? "" : "s"}`}
           </Button>
         </DialogFooter>

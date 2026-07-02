@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, Eye, EyeOff, Sparkles, ShieldCheck, Zap } from "lucide-react";
+import { TurnstileWidget } from "@/components/auth/turnstile-widget";
+import { verifyTurnstile } from "@/lib/turnstile.functions";
 const ceLogo = { url: "/ce-logo.png" };
 
 export const Route = createFileRoute("/auth")({
@@ -26,6 +28,8 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState(false);
 
   // NOTE: intentionally do NOT auto-navigate on existing session.
   // Browser autofill / cached sessions would otherwise "sign in" without an explicit click.
@@ -35,10 +39,20 @@ function AuthPage() {
     e.preventDefault();
     if (submitting) return;
     if (!email.trim() || !password) { toast.error("Enter your email and password"); return; }
+    if (!captchaToken) { toast.error("Please complete the human verification."); return; }
     setSubmitting(true);
+    try {
+      await verifyTurnstile({ data: { token: captchaToken } });
+    } catch (err) {
+      setSubmitting(false);
+      setCaptchaToken(null);
+      toast.error(err instanceof Error ? err.message : "Verification failed. Try again.");
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setSubmitting(false);
     if (error) {
+      setCaptchaToken(null);
       const msg = error.message.toLowerCase();
       if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
         toast.error("Wrong email or password. Check caps-lock and try again.");
@@ -154,13 +168,25 @@ function AuthPage() {
                     </button>
                   </div>
                 </div>
+                <div className="pt-1">
+                  <TurnstileWidget
+                    onVerify={(token) => { setCaptchaToken(token); setCaptchaError(false); }}
+                    onExpire={() => setCaptchaToken(null)}
+                    onError={() => { setCaptchaToken(null); setCaptchaError(true); }}
+                  />
+                  {captchaError && (
+                    <p className="mt-2 text-center text-xs text-destructive/90">
+                      Verification couldn't load. Refresh and try again.
+                    </p>
+                  )}
+                </div>
                 <Button
                   type="submit"
                   className="w-full sheen-on-hover text-white shadow-[var(--shadow-glow)] h-10"
                   style={{ background: "var(--gradient-magenta)" }}
-                  disabled={submitting}
+                  disabled={submitting || !captchaToken}
                 >
-                  {submitting ? "Signing in…" : (<>Sign in <ArrowRight className="h-4 w-4 ml-1.5" /></>)}
+                  {submitting ? "Signing in…" : !captchaToken ? "Verifying you're human…" : (<>Sign in <ArrowRight className="h-4 w-4 ml-1.5" /></>)}
                 </Button>
               </form>
 

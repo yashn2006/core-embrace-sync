@@ -54,15 +54,21 @@ export async function resolveAiProvider(): Promise<ResolvedAiProvider> {
   // Read settings using the service role (bypasses RLS — table is protected
   // at the API layer by owner-only RLS, but server-side we need to read it
   // for every user's AI call).
-  let row: { provider: AiProviderKind; api_key: string | null; model: string | null } | null = null;
+  type SettingsRow = { provider: AiProviderKind; api_key: string | null; model: string | null };
+  let row: SettingsRow | null = null;
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("ai_settings" as never)
-      .select("provider,api_key,model")
-      .eq("org_id", DEFAULT_ORG_ID)
-      .maybeSingle();
-    row = (data as never) ?? null;
+    const admin = supabaseAdmin as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (k: string, v: string) => {
+            maybeSingle: () => Promise<{ data: SettingsRow | null }>;
+          };
+        };
+      };
+    };
+    const { data } = await admin.from("ai_settings").select("provider,api_key,model").eq("org_id", DEFAULT_ORG_ID).maybeSingle();
+    row = data ?? null;
   } catch {
     row = null;
   }

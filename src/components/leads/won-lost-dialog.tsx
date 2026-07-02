@@ -11,6 +11,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Trophy, XCircle } from "lucide-react";
 import { celebrateWin } from "@/lib/celebrate";
+import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_ORG_ID } from "@/lib/constants";
 
 export function WonDialog({ open, onOpenChange, lead, onDone }: { open: boolean; onOpenChange: (v: boolean) => void; lead: Lead | null; onDone: () => void }) {
   const { user } = useAuth();
@@ -26,6 +28,18 @@ export function WonDialog({ open, onOpenChange, lead, onDone }: { open: boolean;
       await updateLead(lead.id, { stage: "won", deal_value: num, won_at: new Date().toISOString(), handoff_note: note || null });
       await logActivity({ lead_id: lead.id, type: "note", outcome: "won", response_text: note || null, created_by: user.id });
       celebrateWin();
+      // Broadcast win to team channel
+      try {
+        const amount = num ? `$${Number(num).toLocaleString()}` : "";
+        await supabase.from("messages").insert({
+          org_id: DEFAULT_ORG_ID,
+          channel_type: "team",
+          sender_id: user.id,
+          content: `🏆 Won ${lead.name}${lead.company ? " @ " + lead.company : ""}${amount ? " · " + amount : ""}`,
+          lead_id: lead.id,
+          quick_tag: "work_done",
+        } as never);
+      } catch { /* non-fatal */ }
       toast.success("Deal won 🎉 Commission auto-created");
       onDone();
       onOpenChange(false);

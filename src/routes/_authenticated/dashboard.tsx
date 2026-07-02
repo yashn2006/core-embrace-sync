@@ -287,6 +287,8 @@ function DashboardPage() {
           </div>
         )}
 
+        {salesFocus && <SalesFocusBlock focus={salesFocus} />}
+
         <div className="surface p-5 animate-reveal">
           <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium mb-4">Recent leads</div>
           {recent.length === 0 && <div className="text-sm text-muted-foreground py-6 text-center">No leads yet — head to the Leads page and add one.</div>}

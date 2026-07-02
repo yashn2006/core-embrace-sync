@@ -26,7 +26,7 @@ export const runDiagnostics = createServerFn({ method: "GET" })
       "chat_reads","meetings","meeting_attendees","push_subscriptions","import_batches","lost_reasons",
     ];
     for (const t of requiredTables) {
-      const { error, count } = await supabaseAdmin.from(t).select("*", { count: "exact", head: true });
+      const { error, count } = await (supabaseAdmin as any).from(t).select("*", { count: "exact", head: true });
       checks.push({
         name: `Table: public.${t}`,
         status: error ? "fail" : "ok",
@@ -54,12 +54,7 @@ export const runDiagnostics = createServerFn({ method: "GET" })
       detail: `${ownerCount ?? 0} owner(s) configured`,
     });
 
-    // Realtime publication
-    try {
-      const { data: pub } = await supabaseAdmin.rpc("pg_stat_statements_reset" as any).select().limit(0);
-      // Best effort — we can't query pg_publication with RPC by default; treat as info
-      void pub;
-    } catch { /* ignore */ }
+    // Realtime — reported as informational
     checks.push({
       name: "Realtime channels",
       status: "ok",

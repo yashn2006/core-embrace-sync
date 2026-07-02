@@ -65,6 +65,39 @@ export type Database = {
           },
         ]
       }
+      ai_settings: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          id: string
+          model: string | null
+          org_id: string
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          org_id: string
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          org_id?: string
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

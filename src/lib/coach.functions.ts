@@ -32,7 +32,7 @@ export const aiRepCoach = createServerFn({ method: "POST" })
     const { data: acts } = await supabase
       .from("activities")
       .select("type,outcome,created_at")
-      .eq("actor_id", data.repId)
+      .eq("created_by", data.repId)
       .order("created_at", { ascending: false })
       .limit(50);
 

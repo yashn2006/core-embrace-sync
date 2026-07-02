@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign, Inbox, Command, ShieldCheck, Brain, Newspaper, FileText, Target } from "lucide-react";
+import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign, Inbox, Command, ShieldCheck, Brain, Newspaper, FileText, Target, KeyRound } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -141,6 +141,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Newspaper className={"h-4 w-4 " + (pathname.startsWith("/digest") ? "text-primary" : "")} />
               <span>Weekly Digest</span>
               <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full text-white font-semibold" style={{ background: "var(--gradient-magenta)" }}>AI</span>
+            </Link>
+            <Link to="/ai-settings" onClick={() => setMobileOpen(false)}
+              className={"group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors " +
+                (pathname.startsWith("/ai-settings") ? "bg-sidebar-accent text-foreground font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground")}>
+              {pathname.startsWith("/ai-settings") && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full" style={{ background: "var(--gradient-magenta)" }} />}
+              <KeyRound className={"h-4 w-4 " + (pathname.startsWith("/ai-settings") ? "text-primary" : "")} />
+              <span>AI Settings</span>
             </Link>
           </>
         )}

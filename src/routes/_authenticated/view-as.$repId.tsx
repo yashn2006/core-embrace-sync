@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/view-as/$repId")({
 
 type Lead = { id: string; name: string; company: string | null; stage: string; deal_value: number | null; progress: number | null; custom_status: string | null; updated_at: string };
 type Commission = { id: string; status: string; commission_amount: number; created_at: string };
-type Activity = { id: string; kind: string; note: string | null; created_at: string; lead_id: string | null };
+type Activity = { id: string; type: string; outcome: string | null; response_text: string | null; created_at: string; lead_id: string | null };
 
 const fmt = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 
@@ -37,7 +37,7 @@ function ViewAsPage() {
         supabase.from("profiles").select("name, email, phone").eq("id", repId).maybeSingle(),
         supabase.from("leads").select("id, name, company, stage, deal_value, progress, custom_status, updated_at").eq("assigned_to", repId).order("updated_at", { ascending: false }),
         (supabase as any).from("commissions").select("id, status, commission_amount, created_at").eq("rep_id", repId),
-        supabase.from("activities").select("id, kind, note, created_at, lead_id").eq("actor_id", repId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("activities").select("id, type, outcome, response_text, created_at, lead_id").eq("created_by", repId).order("created_at", { ascending: false }).limit(20),
       ]);
       setRep(p as any);
       setLeads((ls ?? []) as Lead[]);
@@ -148,8 +148,8 @@ function ViewAsPage() {
                   <div key={a.id} className="p-3 flex items-start gap-3">
                     <div className="h-1.5 w-1.5 rounded-full mt-1.5" style={{ background: "var(--gradient-magenta)" }} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium">{a.kind}</div>
-                      {a.note && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.note}</div>}
+                      <div className="text-xs font-medium">{a.type}{a.outcome ? ` · ${a.outcome}` : ""}</div>
+                      {a.response_text && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.response_text}</div>}
                     </div>
                     <div className="text-[10px] text-muted-foreground shrink-0">{new Date(a.created_at).toLocaleString()}</div>
                   </div>

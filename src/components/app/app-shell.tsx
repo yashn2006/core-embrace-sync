@@ -1,15 +1,17 @@
 import { type ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign } from "lucide-react";
+import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign, Inbox, Command } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
 import { Button } from "@/components/ui/button";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { useFollowupNotifications } from "@/hooks/use-followup-notifications";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { CommandPalette } from "@/components/app/command-palette";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/leads", label: "Leads", icon: Users },
   { to: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { to: "/meetings", label: "Meetings", icon: Video },
@@ -179,6 +181,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             {role === "owner" ? "Founder workspace" : "Your workspace"}
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => window.dispatchEvent(new Event("coreegin:open-command"))}
+              className="hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-lg border border-hairline text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
+              aria-label="Open command palette"
+            >
+              <Command className="h-3.5 w-3.5" />
+              <span>Search or jump…</span>
+              <kbd className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">⌘K</kbd>
+            </button>
             <Button size="sm" variant="ghost" onClick={signOut} className="md:hidden">
               <LogOut className="h-4 w-4" />
             </Button>
@@ -187,8 +198,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="flex-1 overflow-auto relative">{children}</main>
 
-        <nav className="md:hidden border-t border-hairline grid grid-cols-4 bg-sidebar/95 backdrop-blur sticky bottom-0 z-10 pb-[env(safe-area-inset-bottom)]">
-          {NAV.map((item) => {
+        <nav className="md:hidden border-t border-hairline grid grid-cols-5 bg-sidebar/95 backdrop-blur sticky bottom-0 z-10 pb-[env(safe-area-inset-bottom)]">
+          {NAV.slice(0, 5).map((item) => {
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             const Icon = item.icon;
             const showBadge = item.to === "/chat" && unread > 0;
@@ -210,6 +221,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
       </div>
+      <CommandPalette />
     </div>
   );
 }

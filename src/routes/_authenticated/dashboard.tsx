@@ -6,8 +6,9 @@ import { StatCard } from "@/components/app/stat-card";
 import { useAuth } from "@/hooks/use-auth";
 import { listLeads, listProfiles, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, STAGE_LABEL, SOURCES, type StageKey } from "@/lib/constants";
-import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign, Activity, Trophy } from "lucide-react";
-import { formatDistanceToNow, isPast, isToday, isTomorrow, startOfWeek, addWeeks, format, isAfter } from "date-fns";
+import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarSign, Activity, Trophy, Flame, Zap, Rocket, Crown } from "lucide-react";
+import { formatDistanceToNow, isPast, isToday, isTomorrow, startOfWeek, addWeeks, format, isAfter, differenceInDays, startOfMonth } from "date-fns";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -116,6 +117,46 @@ function DashboardPage() {
     const upcoming = active.filter((l) => !isPast(new Date(l.next_follow_up!))).sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()).slice(0, 5);
     return { overdue: overdue.sort((a, b) => new Date(a.next_follow_up!).getTime() - new Date(b.next_follow_up!).getTime()), upcoming };
   }, [leads, user, isOwner]);
+
+  // ============ REP-ONLY SALES FOCUS ============
+  const salesFocus = useMemo(() => {
+    if (isOwner || !user) return null;
+    const mine = leads.filter((l) => l.assigned_to === user.id);
+    const active = mine.filter((l) => l.stage !== "won" && l.stage !== "lost");
+    const now = new Date();
+    // Streak — unique days I updated any lead, back from today
+    const days = new Set(mine.map((l) => format(new Date(l.updated_at), "yyyy-MM-dd")));
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      const d = format(new Date(now.getTime() - i * 86400000), "yyyy-MM-dd");
+      if (days.has(d)) streak++; else break;
+    }
+    // Momentum — % of active leads touched in last 7d
+    const week = now.getTime() - 7 * 86400000;
+    const touched = active.filter((l) => new Date(l.updated_at).getTime() >= week).length;
+    const momentum = active.length ? Math.round((touched / active.length) * 100) : 0;
+    // This month won
+    const monthStart = startOfMonth(now);
+    const monthWon = mine.filter((l) => l.stage === "won" && new Date(l.updated_at) >= monthStart);
+    const monthWonValue = monthWon.reduce((s, l) => s + (l.deal_value ?? 0), 0);
+    // Leaderboard position (by monthly wins across reps)
+    const board = profiles.map((p) => {
+      const wins = leads.filter((l) => l.assigned_to === p.id && l.stage === "won" && new Date(l.updated_at) >= monthStart);
+      return { id: p.id, name: p.name, count: wins.length, value: wins.reduce((s, l) => s + (l.deal_value ?? 0), 0) };
+    }).sort((a, b) => b.value - a.value || b.count - a.count);
+    const rank = board.findIndex((b) => b.id === user.id) + 1;
+    const leader = board[0];
+    // Top 3 focus leads: score = overdue*3 + high progress + high value tie-breaker
+    const scored = active.map((l) => {
+      const overdueDays = l.next_follow_up ? Math.max(0, differenceInDays(now, new Date(l.next_follow_up))) : 0;
+      const staleDays = Math.max(0, differenceInDays(now, new Date(l.updated_at)));
+      const prog = (l as any).progress ?? 0;
+      const val = l.deal_value ?? 0;
+      const score = overdueDays * 12 + staleDays * 1.5 + prog * 0.6 + Math.min(val / 500, 30);
+      return { lead: l, score, overdueDays, staleDays };
+    }).sort((a, b) => b.score - a.score).slice(0, 3);
+    return { streak, momentum, monthWon: monthWon.length, monthWonValue, rank, boardSize: board.length, leader, focus: scored };
+  }, [leads, profiles, user, isOwner]);
 
   // displayName from auth context above
 
@@ -246,6 +287,8 @@ function DashboardPage() {
           </div>
         )}
 
+        {salesFocus && <SalesFocusBlock focus={salesFocus} />}
+
         <div className="surface p-5 animate-reveal">
           <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium mb-4">Recent leads</div>
           {recent.length === 0 && <div className="text-sm text-muted-foreground py-6 text-center">No leads yet — head to the Leads page and add one.</div>}
@@ -356,4 +399,80 @@ function ConversionTrend({ trend, maxTrendCount }: { trend: Array<{ start: Date;
       </svg>
     </div>
   );
+}
+
+function SalesFocusBlock({ focus }: { focus: NonNullable<ReturnType<typeof buildFocusStub>> }) {
+  const { streak, momentum, monthWon, monthWonValue, rank, boardSize, leader, focus: leads } = focus;
+  const isTop = rank === 1;
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-3 animate-reveal">
+      <div className="surface p-5 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ background: "var(--gradient-magenta)" }} />
+        <div className="flex items-center gap-2 mb-4 relative">
+          <Rocket className="h-3.5 w-3.5 text-primary" />
+          <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Today's mission — top 3 to close</div>
+        </div>
+        {leads.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">Inbox zero. Add a lead or wait for the owner to assign one. 🎯</div>
+        ) : (
+          <div className="space-y-2 relative">
+            {leads.map(({ lead, overdueDays, staleDays }, i) => (
+              <RouterLink key={lead.id} to="/leads" search={{ q: lead.name, stage: "all", owner: "all" }}
+                className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-muted/60 border border-hairline transition-all hover:shadow-sm hover:-translate-y-px group">
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: "var(--gradient-magenta)" }}>{i + 1}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{lead.name}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {lead.company ?? STAGE_LABEL[lead.stage as StageKey]}
+                    {overdueDays > 0 && <span className="ml-1.5 text-destructive">· {overdueDays}d overdue</span>}
+                    {overdueDays === 0 && staleDays > 3 && <span className="ml-1.5 text-amber-600">· cold {staleDays}d</span>}
+                  </div>
+                </div>
+                {lead.deal_value != null && <div className="text-xs tabular font-semibold text-primary shrink-0">{formatCurrency(lead.deal_value)}</div>}
+              </RouterLink>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="surface p-4 flex flex-col justify-between relative overflow-hidden">
+          <div className="flex items-center gap-1.5"><Flame className={"h-3.5 w-3.5 " + (streak > 0 ? "text-orange-500" : "text-muted-foreground")} /><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Streak</div></div>
+          <div>
+            <div className="text-3xl font-semibold tabular">{streak}<span className="text-sm text-muted-foreground ml-1">day{streak === 1 ? "" : "s"}</span></div>
+            <div className="text-[10px] text-muted-foreground">of activity</div>
+          </div>
+        </div>
+        <div className="surface p-4 flex flex-col justify-between">
+          <div className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary" /><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Momentum</div></div>
+          <div>
+            <div className="text-3xl font-semibold tabular">{momentum}<span className="text-sm text-muted-foreground">%</span></div>
+            <div className="h-1 rounded-full bg-muted mt-1 overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${momentum}%`, background: "var(--gradient-magenta)" }} /></div>
+          </div>
+        </div>
+        <div className="surface p-4 col-span-2 flex items-center gap-3">
+          <div className={"h-11 w-11 rounded-full flex items-center justify-center shrink-0 " + (isTop ? "text-white" : "bg-muted text-muted-foreground")} style={isTop ? { background: "var(--gradient-magenta)" } : undefined}>
+            {isTop ? <Crown className="h-5 w-5" /> : <span className="text-sm font-bold tabular">#{rank || "—"}</span>}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">This month</div>
+            <div className="text-sm font-medium">{monthWon} win{monthWon === 1 ? "" : "s"} · {formatCurrency(monthWonValue)}</div>
+            <div className="text-[11px] text-muted-foreground truncate">
+              {isTop ? "🏆 You're leading the team" : leader && leader.count > 0 ? `Leader: ${leader.name} · ${leader.count} wins` : "Be the first to score this month"}
+            </div>
+          </div>
+          <div className="text-[10px] tabular text-muted-foreground shrink-0">{rank}/{boardSize}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// helper type carrier — never called, only for typing SalesFocusBlock props
+function buildFocusStub() {
+  return null as null | {
+    streak: number; momentum: number; monthWon: number; monthWonValue: number;
+    rank: number; boardSize: number;
+    leader: { id: string; name: string; count: number; value: number } | undefined;
+    focus: Array<{ lead: Lead; score: number; overdueDays: number; staleDays: number }>;
+  };
 }

@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, EyeOff, Users } from "lucide-react";
+import { Plus, Eye, EyeOff, Users, Search, SlidersHorizontal, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { listLeads, listProfiles, updateLead, logActivity, formatCurrency, type Lead, type Profile } from "@/lib/leads";
@@ -30,6 +33,10 @@ function PipelinePage() {
   const [pendingLost, setPendingLost] = useState<Lead | null>(null);
   const [showClosed, setShowClosed] = useState(false);
   const [repFilter, setRepFilter] = useState<string>("all"); // owner-only: 'all' | 'unassigned' | <userId>
+  const [q, setQ] = useState("");
+  const [cstatus, setCstatus] = useState<"any" | "with" | "without">("any");
+  const [vmin, setVmin] = useState("");
+  const [pmin, setPmin] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   async function refresh() {
@@ -41,10 +48,24 @@ function PipelinePage() {
   useEffect(() => { refresh(); }, []);
 
   const filteredLeads = useMemo(() => {
-    if (!isOwner || repFilter === "all") return leads;
-    if (repFilter === "unassigned") return leads.filter((l) => !l.assigned_to);
-    return leads.filter((l) => l.assigned_to === repFilter);
-  }, [leads, isOwner, repFilter]);
+    const t = q.trim().toLowerCase();
+    const vm = vmin ? Number(vmin) : null;
+    const pm = pmin ? Number(pmin) : null;
+    return leads.filter((l) => {
+      if (isOwner && repFilter !== "all") {
+        if (repFilter === "unassigned" ? !!l.assigned_to : l.assigned_to !== repFilter) return false;
+      }
+      if (vm != null && (l.deal_value ?? 0) < vm) return false;
+      if (pm != null && ((l as any).progress ?? 0) < pm) return false;
+      const cs = (l as any).custom_status;
+      if (cstatus === "with" && !cs) return false;
+      if (cstatus === "without" && cs) return false;
+      if (t && ![l.name, l.company, l.email, l.description].some((v) => v?.toLowerCase().includes(t))) return false;
+      return true;
+    });
+  }, [leads, isOwner, repFilter, q, cstatus, vmin, pmin]);
+
+  const advCount = (cstatus !== "any" ? 1 : 0) + (vmin ? 1 : 0) + (pmin ? 1 : 0);
 
   const grouped = useMemo(() => {
     const map = new Map<StageKey, Lead[]>();
@@ -99,6 +120,45 @@ function PipelinePage() {
         description="Only active leads. Drag between stages — every move is logged."
         actions={
           <div className="flex items-center gap-2">
+            <div className="relative hidden sm:block">
+              <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input className="h-8 pl-8 w-[180px] text-xs" placeholder="Search leads…" value={q} onChange={(e) => setQ(e.target.value)} />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 relative">
+                  <SlidersHorizontal className="h-3.5 w-3.5 sm:mr-1.5" /><span className="hidden sm:inline">Filters</span>
+                  {advCount > 0 && <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-[9px] font-semibold text-white flex items-center justify-center">{advCount}</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 space-y-3" align="end">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Advanced filters</div>
+                <div>
+                  <Label className="text-[10px] uppercase">Deal value ≥</Label>
+                  <Input type="number" placeholder="0" value={vmin} onChange={(e) => setVmin(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase">Progress ≥ (%)</Label>
+                  <Input type="number" min={0} max={100} placeholder="0" value={pmin} onChange={(e) => setPmin(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase">Custom status</Label>
+                  <Select value={cstatus} onValueChange={(v) => setCstatus(v as any)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any</SelectItem>
+                      <SelectItem value="with">Has custom status</SelectItem>
+                      <SelectItem value="without">No custom status</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {advCount > 0 && (
+                  <Button size="sm" variant="ghost" className="w-full" onClick={() => { setCstatus("any"); setVmin(""); setPmin(""); }}>
+                    <X className="h-3.5 w-3.5 mr-1" />Clear
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
             {isOwner && (
               <Select value={repFilter} onValueChange={setRepFilter}>
                 <SelectTrigger className="h-8 w-[160px] text-xs">

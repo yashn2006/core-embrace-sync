@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, Eye, EyeOff, Sparkles, ShieldCheck, Zap } from "lucide-react";
-import ceLogo from "@/assets/ce-logo.png.asset.json";
+const ceLogo = { url: "/ce-logo.png" };
 
 export const Route = createFileRoute("/auth")({
   head: () => ({

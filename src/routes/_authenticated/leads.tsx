@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { listLeads, listProfiles, deleteLead, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, STAGE_ACCENT, type StageKey } from "@/lib/constants";
+import { scoreLead, HEAT_STYLE } from "@/lib/lead-scoring";
 import { LeadDialog } from "@/components/leads/lead-dialog";
 import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet";
 import { CsvImportDialog } from "@/components/leads/csv-import-dialog";
@@ -321,12 +322,23 @@ function LeadsPage() {
                   <TableCell>
                     <div className="font-medium">{l.name}</div>
                     <div className="text-xs text-muted-foreground">{l.company ?? l.email ?? l.phone ?? "—"}</div>
-                    {(l as any).custom_status && (
-                      <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-primary/10 text-primary px-1.5 py-0.5">
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      {(() => {
+                        const s = scoreLead(l);
+                        const st = HEAT_STYLE[s.heat];
+                        return (
+                          <span title={s.reasons.join(" · ") || "Lead heat"} className={"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium " + st.className}>
+                            <span>{st.emoji}</span>{st.label}<span className="tabular opacity-70">{s.score}</span>
+                          </span>
+                        );
+                      })()}
+                      {(l as any).custom_status && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-primary/10 text-primary px-1.5 py-0.5">
                         <span className="h-1 w-1 rounded-full bg-primary animate-pulse" />
                         <span className="truncate max-w-[220px]">{(l as any).custom_status}</span>
-                      </div>
-                    )}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {(() => {

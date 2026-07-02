@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign, Inbox, Command } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { Button } from "@/components/ui/button";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { useFollowupNotifications } from "@/hooks/use-followup-notifications";
@@ -22,6 +23,7 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { role, user, signOut } = useAuth();
   useSessionTimeout({ hardMs: 60 * 60_000, idleMs: 10 * 60_000 });
+  useKeyboardShortcuts();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const initials = (user?.email ?? "?").slice(0, 1).toUpperCase();
   const { total: unread } = useChatUnread();

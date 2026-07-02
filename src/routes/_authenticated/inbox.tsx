@@ -67,8 +67,8 @@ function InboxPage() {
     <div className="p-4 md:p-6 space-y-5">
       <PageHeader
         title="Smart follow-up inbox"
-        subtitle={role === "owner" ? "All reps — the deals that need action right now." : "Your action queue. Clear it every day."}
-        icon={<Sparkles className="h-4 w-4 text-primary" />}
+        description={role === "owner" ? "All reps — the deals that need action right now." : "Your action queue. Clear it every day."}
+        eyebrow="Focus"
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

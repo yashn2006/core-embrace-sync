@@ -11,6 +11,7 @@ import { ActivityTimeline } from "./activity-timeline";
 import { LeadChatPanel } from "./lead-chat-panel";
 import { WonDialog, LostDialog } from "./won-lost-dialog";
 import { QuickStatusBar } from "./quick-status-bar";
+import { AiAssistPanel } from "./ai-assist-panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/leads";
@@ -204,6 +205,7 @@ export function LeadDetailSheet({
               <TabsList>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="ai">AI</TabsTrigger>
                 <TabsTrigger value="details">Details</TabsTrigger>
               </TabsList>
               <TabsContent value="timeline" className="mt-4 space-y-4">
@@ -212,6 +214,9 @@ export function LeadDetailSheet({
               </TabsContent>
               <TabsContent value="chat" className="mt-4">
                 <LeadChatPanel leadId={lead.id} leadName={lead.name} profiles={profiles} />
+              </TabsContent>
+              <TabsContent value="ai" className="mt-4">
+                <AiAssistPanel leadId={lead.id} />
               </TabsContent>
               <TabsContent value="details" className="mt-4 space-y-3 text-sm">
                 {(lead as any).address && <DetailLine k="Address" v={(lead as any).address} />}

@@ -1,0 +1,37 @@
+============================================================
+STEP 3 of 3 — Environment variables for Cloudflare Pages
+WHERE TO PASTE: Cloudflare Dashboard → your Pages project
+                → Settings → Environment variables → "Add variable"
+                (Do it for BOTH "Production" AND "Preview")
+============================================================
+
+VITE_SUPABASE_URL
+https://sgaiifxwbiottfleyuno.supabase.co
+
+VITE_SUPABASE_PUBLISHABLE_KEY
+<paste your "anon public" key from Supabase → Project Settings → API>
+
+VITE_SUPABASE_PROJECT_ID
+sgaiifxwbiottfleyuno
+
+SUPABASE_URL
+https://sgaiifxwbiottfleyuno.supabase.co
+
+SUPABASE_PUBLISHABLE_KEY
+<same anon public key as above>
+
+SUPABASE_SERVICE_ROLE_KEY
+<paste your "service_role secret" key from Supabase → Project Settings → API>
+
+DAILY_API_KEY
+1f3ac7232b6691caf4983b5f7011d5c5227ff0d218ae59e10a7cdfc48fc7ddb7
+
+VAPID_PUBLIC_KEY
+BEBlIct0jXDFx2q7QhUdJ8uqXeDQleMgx3Br1uYA5JzbY4LruPyjEKzSj5i9C8qaq_25REJOXH0rjemcuAaGblY
+
+VAPID_PRIVATE_KEY
+<generate one time only: run in terminal → npx web-push generate-vapid-keys
+ use the "Private Key" it prints>
+
+VAPID_SUBJECT
+mailto:parkarsaad2021@gmail.com

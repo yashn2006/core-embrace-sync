@@ -444,6 +444,42 @@ export type Database = {
           },
         ]
       }
+      message_templates: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          created_by: string
+          id: string
+          is_shared: boolean
+          org_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_shared?: boolean
+          org_id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_shared?: boolean
+          org_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_name: string | null
@@ -650,6 +686,42 @@ export type Database = {
           p256dh?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      sales_goals: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          month: string
+          org_id: string
+          rep_id: string
+          target_amount: number
+          target_leads: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          month: string
+          org_id?: string
+          rep_id: string
+          target_amount?: number
+          target_leads?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          month?: string
+          org_id?: string
+          rep_id?: string
+          target_amount?: number
+          target_leads?: number
+          updated_at?: string
         }
         Relationships: []
       }

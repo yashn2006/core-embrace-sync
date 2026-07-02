@@ -24,6 +24,7 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedViewAsRepIdRouteImport } from './routes/_authenticated/view-as.$repId'
@@ -103,6 +104,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/health': typeof AuthenticatedHealthRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/health': typeof AuthenticatedHealthRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/audit'
     | '/chat'
+    | '/coach'
     | '/dashboard'
     | '/earnings'
     | '/health'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/audit'
     | '/chat'
+    | '/coach'
     | '/dashboard'
     | '/earnings'
     | '/health'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/audit'
     | '/_authenticated/chat'
+    | '/_authenticated/coach'
     | '/_authenticated/dashboard'
     | '/_authenticated/earnings'
     | '/_authenticated/health'
@@ -353,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/coach': {
+      id: '/_authenticated/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof AuthenticatedCoachRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat': {
       id: '/_authenticated/chat'
       path: '/chat'
@@ -380,6 +399,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
@@ -398,6 +418,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,

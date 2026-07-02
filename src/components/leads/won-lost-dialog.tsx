@@ -10,6 +10,7 @@ import { logActivity, recordLostReason, updateLead, type Lead } from "@/lib/lead
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Trophy, XCircle } from "lucide-react";
+import { celebrateWin } from "@/lib/celebrate";
 
 export function WonDialog({ open, onOpenChange, lead, onDone }: { open: boolean; onOpenChange: (v: boolean) => void; lead: Lead | null; onDone: () => void }) {
   const { user } = useAuth();
@@ -24,7 +25,8 @@ export function WonDialog({ open, onOpenChange, lead, onDone }: { open: boolean;
     try {
       await updateLead(lead.id, { stage: "won", deal_value: num, won_at: new Date().toISOString(), handoff_note: note || null });
       await logActivity({ lead_id: lead.id, type: "note", outcome: "won", response_text: note || null, created_by: user.id });
-      toast.success("Deal won 🎉");
+      celebrateWin();
+      toast.success("Deal won 🎉 Commission auto-created");
       onDone();
       onOpenChange(false);
       setValue(""); setNote("");

@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video } from "lucide-react";
+import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
 import { Button } from "@/components/ui/button";
@@ -57,9 +57,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           );
         })}
 
+        {/* Earnings — visible to everyone; reps see own, owner sees all */}
+        <Link to="/earnings" onClick={() => setMobileOpen(false)}
+          className={"group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors " +
+            (pathname.startsWith("/earnings") ? "bg-sidebar-accent text-foreground font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground")}>
+          {pathname.startsWith("/earnings") && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full" style={{ background: "var(--gradient-magenta)" }} />}
+          <Wallet className={"h-4 w-4 " + (pathname.startsWith("/earnings") ? "text-primary" : "")} />
+          <span>{role === "owner" ? "Earnings" : "My earnings"}</span>
+          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full text-white font-semibold" style={{ background: "var(--gradient-magenta)" }}>20%</span>
+        </Link>
+
         {role === "owner" && (
           <>
             <div className="pt-4 pb-1.5 px-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">Admin</div>
+            <Link to="/payouts" onClick={() => setMobileOpen(false)}
+              className={"group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors " +
+                (pathname.startsWith("/payouts") ? "bg-sidebar-accent text-foreground font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground")}>
+              {pathname.startsWith("/payouts") && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full" style={{ background: "var(--gradient-magenta)" }} />}
+              <DollarSign className={"h-4 w-4 " + (pathname.startsWith("/payouts") ? "text-primary" : "")} />
+              <span>Payouts</span>
+            </Link>
             <Link to="/team" onClick={() => setMobileOpen(false)}
               className={"group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors " +
                 (pathname.startsWith("/team") ? "bg-sidebar-accent text-foreground font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground")}>

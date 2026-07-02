@@ -245,6 +245,7 @@ export type Database = {
           progress: number
           source: Database["public"]["Enums"]["lead_source"]
           stage: Database["public"]["Enums"]["lead_stage"]
+          tags: string[]
           updated_at: string
           website: string | null
           won_at: string | null
@@ -271,6 +272,7 @@ export type Database = {
           progress?: number
           source?: Database["public"]["Enums"]["lead_source"]
           stage?: Database["public"]["Enums"]["lead_stage"]
+          tags?: string[]
           updated_at?: string
           website?: string | null
           won_at?: string | null
@@ -297,6 +299,7 @@ export type Database = {
           progress?: number
           source?: Database["public"]["Enums"]["lead_source"]
           stage?: Database["public"]["Enums"]["lead_stage"]
+          tags?: string[]
           updated_at?: string
           website?: string | null
           won_at?: string | null

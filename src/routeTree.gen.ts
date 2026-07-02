@@ -30,6 +30,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedAiSettingsRouteImport } from './routes/_authenticated/ai-settings'
 import { Route as AuthenticatedViewAsRepIdRouteImport } from './routes/_authenticated/view-as.$repId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -137,6 +138,11 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAiSettingsRoute = AuthenticatedAiSettingsRouteImport.update({
+  id: '/ai-settings',
+  path: '/ai-settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedViewAsRepIdRoute =
   AuthenticatedViewAsRepIdRouteImport.update({
     id: '/view-as/$repId',
@@ -147,6 +153,7 @@ const AuthenticatedViewAsRepIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ai-settings': typeof AuthenticatedAiSettingsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/chat': typeof AuthenticatedChatRoute
   '/coach': typeof AuthenticatedCoachRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ai-settings': typeof AuthenticatedAiSettingsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/chat': typeof AuthenticatedChatRoute
   '/coach': typeof AuthenticatedCoachRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/ai-settings': typeof AuthenticatedAiSettingsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/ai-settings'
     | '/audit'
     | '/chat'
     | '/coach'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/ai-settings'
     | '/audit'
     | '/chat'
     | '/coach'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/ai-settings'
     | '/_authenticated/audit'
     | '/_authenticated/chat'
     | '/_authenticated/coach'
@@ -443,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ai-settings': {
+      id: '/_authenticated/ai-settings'
+      path: '/ai-settings'
+      fullPath: '/ai-settings'
+      preLoaderRoute: typeof AuthenticatedAiSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/view-as/$repId': {
       id: '/_authenticated/view-as/$repId'
       path: '/view-as/$repId'
@@ -454,6 +473,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAiSettingsRoute: typeof AuthenticatedAiSettingsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
@@ -476,6 +496,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAiSettingsRoute: AuthenticatedAiSettingsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,

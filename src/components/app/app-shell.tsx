@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign, Inbox, Command } from "lucide-react";
+import { LayoutDashboard, Users, KanbanSquare, MessageSquare, UserCog, LogOut, Sparkles, Settings, Menu, MessagesSquare, Video, Wallet, DollarSign, Inbox, Command, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -18,6 +18,10 @@ const NAV = [
   { to: "/meetings", label: "Meetings", icon: Video },
   { to: "/lead-logs", label: "Lead logs", icon: MessagesSquare },
   { to: "/chat", label: "Chat", icon: MessageSquare },
+] as const;
+
+const OWNER_EXTRA = [
+  { to: "/audit", label: "Audit log", icon: ShieldCheck },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

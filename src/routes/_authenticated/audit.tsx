@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { ShieldCheck, Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/audit")({
   head: () => ({ meta: [{ title: "Audit log — CoreEgin Sales OS" }] }),
@@ -70,7 +70,6 @@ function AuditPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<ShieldCheck className="h-5 w-5" />}
         title="Audit log"
         description="Every change to every lead — who, what, when."
       />

@@ -39,7 +39,18 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
+        toast.error("Wrong email or password. Check caps-lock and try again.");
+      } else if (msg.includes("email not confirmed")) {
+        toast.error("Email not confirmed. Ask the founder to re-create your account.");
+      } else if (msg.includes("redirect") || msg.includes("url")) {
+        toast.error("Auth redirect misconfigured. In Cloud → Auth → URL config, set Site URL to https://coreegin.com and add https://coreegin.com/* to Redirect URLs.");
+      } else if (msg.includes("network") || msg.includes("fetch")) {
+        toast.error("Can't reach the backend. Check internet, or Cloudflare → Pages → Env vars for VITE_SUPABASE_URL.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
     navigate({ to: "/dashboard", replace: true });

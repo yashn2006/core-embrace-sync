@@ -26,6 +26,9 @@ export interface LeadInput {
   email?: string | null;
   phone?: string | null;
   company?: string | null;
+  address?: string | null;
+  business_type?: string | null;
+  website?: string | null;
   description?: string | null;
   source: SourceKey;
   stage: StageKey;

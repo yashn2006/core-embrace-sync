@@ -77,10 +77,11 @@ export function CommandPalette() {
     return () => clearTimeout(t);
   }, [query, open]);
 
-  const go = (to: string) => {
+  const go = (to: string, search?: Record<string, string>) => {
     setOpen(false);
     setQuery("");
-    navigate({ to });
+    // Use `as never` because navigate is typed against the full route search union.
+    navigate({ to, search: (search ?? {}) as never } as never);
   };
 
   return (
@@ -92,7 +93,7 @@ export function CommandPalette() {
         {hits.length > 0 && (
           <CommandGroup heading="Leads">
             {hits.map((h) => (
-              <CommandItem key={h.id} value={`lead-${h.id}-${h.name}`} onSelect={() => go(`/leads?q=${encodeURIComponent(h.name)}`)}>
+              <CommandItem key={h.id} value={`lead-${h.id}-${h.name}`} onSelect={() => go("/leads", { q: h.name })}>
                 <Search className="h-4 w-4" />
                 <span className="truncate">{h.name}</span>
                 {h.company && <span className="text-muted-foreground text-xs truncate">· {h.company}</span>}
@@ -115,8 +116,8 @@ export function CommandPalette() {
         <CommandSeparator />
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => go("/leads?new=1")}><Plus className="h-4 w-4" />New lead</CommandItem>
-          {isOwner && <CommandItem onSelect={() => go("/leads?import=1")}><Upload className="h-4 w-4" />Import CSV / Excel</CommandItem>}
+          <CommandItem onSelect={() => go("/leads")}><Plus className="h-4 w-4" />Go to Leads (new)</CommandItem>
+          {isOwner && <CommandItem onSelect={() => go("/leads")}><Upload className="h-4 w-4" />Import CSV / Excel</CommandItem>}
           {isOwner && <CommandItem onSelect={() => go("/team")}><UserCog className="h-4 w-4" />Manage team</CommandItem>}
           <CommandItem onSelect={() => go("/settings")}><Settings className="h-4 w-4" />Settings</CommandItem>
           <CommandItem onSelect={() => { setOpen(false); void signOut(); }}><LogOut className="h-4 w-4" />Sign out</CommandItem>

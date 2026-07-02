@@ -1,6 +1,16 @@
 
 ---
 
+## ⚠️ Do NOT run `coreegin_full_schema.sql` if you already ran STEP_1
+
+`coreegin_full_schema.sql` is the **same schema** as STEP_1, kept as a single-file
+backup for reference. Running both will error with `type "app_role" already exists`.
+
+**Follow the numbered STEPs only (1 → 2 → 4 → 5 → 6).** Ignore the two
+`coreegin_*` files unless you're rebuilding from scratch on an empty project.
+
+---
+
 ## Extra files (run AFTER Step 1 & 2)
 
 - **STEP_4_storage_buckets.sql** — creates the `avatars` and `chat-attachments`

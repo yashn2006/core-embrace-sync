@@ -182,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button
-              onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+              onClick={() => window.dispatchEvent(new Event("coreegin:open-command"))}
               className="hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-lg border border-hairline text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
               aria-label="Open command palette"
             >

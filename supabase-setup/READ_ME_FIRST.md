@@ -1,3 +1,18 @@
+
+---
+
+## Extra files (run AFTER Step 1 & 2)
+
+- **STEP_4_storage_buckets.sql** — creates the `avatars` and `chat-attachments`
+  buckets. Required for profile pictures and chat file uploads.
+- **STEP_5_role_management.sql** — cheat sheet for adding users, promoting to
+  owner, demoting, deactivating, and listing everyone's role.
+  → Users are created in **Authentication → Users → Add user**.
+  The trigger from Step 1 auto-creates their profile + gives them `rep` role.
+  Run **BLOCK A** in this file to promote someone to owner.
+- **STEP_6_admin_queries.sql** — optional cheat sheet: bulk reassign leads,
+  rep performance, conversion rate, stale leads, sanity checks.
+  Everything here is also available inside the CRM UI — keep it for debugging.
 # CoreEgin — Move to your own Supabase (super simple, 3 steps)
 
 ## Before you start

@@ -128,7 +128,7 @@ function DashboardPage() {
     const days = new Set(mine.map((l) => format(new Date(l.updated_at), "yyyy-MM-dd")));
     let streak = 0;
     for (let i = 0; i < 60; i++) {
-      const d = format(addWeeks(now, 0).setDate ? new Date(now.getTime() - i * 86400000) : now, "yyyy-MM-dd");
+      const d = format(new Date(now.getTime() - i * 86400000), "yyyy-MM-dd");
       if (days.has(d)) streak++; else break;
     }
     // Momentum — % of active leads touched in last 7d

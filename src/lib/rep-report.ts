@@ -9,7 +9,7 @@ export async function generateRepReport(repId: string, repName: string) {
   const [{ data: leads }, { data: comms }, { data: acts }] = await Promise.all([
     supabase.from("leads").select("*").eq("assigned_to", repId),
     supabase.from("commissions").select("deal_value,commission_amount,status,created_at").eq("rep_id", repId),
-    supabase.from("activities").select("id,type,created_at").eq("actor_id", repId).gte("created_at", since),
+    supabase.from("activities").select("id,type,created_at").eq("created_by", repId).gte("created_at", since),
   ]);
   const L = (leads ?? []) as Lead[];
   const C = (comms ?? []) as Commission[];

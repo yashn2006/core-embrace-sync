@@ -110,7 +110,7 @@ function GoalCard({ profile, goal, wonAmount, newLeads, amountPct, leadsPct, pac
           </div>
           <div>
             <div className="font-semibold text-sm">{profile.name}</div>
-            <div className="text-[11px] text-muted-foreground capitalize">{profile.role ?? "rep"}</div>
+            <div className="text-[11px] text-muted-foreground">{profile.email}</div>
           </div>
         </div>
         <span className={"text-[10px] font-semibold px-2 py-0.5 rounded-full " + (onPace ? "bg-success/15 text-success" : "bg-amber-500/15 text-amber-600")}>

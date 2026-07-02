@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
@@ -22,6 +23,7 @@ import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedLeadLogsRouteImport } from './routes/_authenticated/lead-logs'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
+import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedDigestRouteImport } from './routes/_authenticated/digest'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -43,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTemplatesRoute = AuthenticatedTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   id: '/team',
@@ -95,6 +102,11 @@ const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
   path: '/health',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
@@ -141,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/digest': typeof AuthenticatedDigestRoute
   '/earnings': typeof AuthenticatedEarningsRoute
+  '/goals': typeof AuthenticatedGoalsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
@@ -151,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
   '/view-as/$repId': typeof AuthenticatedViewAsRepIdRoute
 }
 export interface FileRoutesByTo {
@@ -162,6 +176,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/digest': typeof AuthenticatedDigestRoute
   '/earnings': typeof AuthenticatedEarningsRoute
+  '/goals': typeof AuthenticatedGoalsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
@@ -172,6 +187,7 @@ export interface FileRoutesByTo {
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
   '/view-as/$repId': typeof AuthenticatedViewAsRepIdRoute
 }
 export interface FileRoutesById {
@@ -185,6 +201,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/digest': typeof AuthenticatedDigestRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
+  '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/lead-logs': typeof AuthenticatedLeadLogsRoute
@@ -195,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
   '/_authenticated/view-as/$repId': typeof AuthenticatedViewAsRepIdRoute
 }
 export interface FileRouteTypes {
@@ -208,6 +226,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/digest'
     | '/earnings'
+    | '/goals'
     | '/health'
     | '/inbox'
     | '/lead-logs'
@@ -218,6 +237,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/settings'
     | '/team'
+    | '/templates'
     | '/view-as/$repId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -229,6 +249,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/digest'
     | '/earnings'
+    | '/goals'
     | '/health'
     | '/inbox'
     | '/lead-logs'
@@ -239,6 +260,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/settings'
     | '/team'
+    | '/templates'
     | '/view-as/$repId'
   id:
     | '__root__'
@@ -251,6 +273,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/digest'
     | '/_authenticated/earnings'
+    | '/_authenticated/goals'
     | '/_authenticated/health'
     | '/_authenticated/inbox'
     | '/_authenticated/lead-logs'
@@ -261,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pipeline'
     | '/_authenticated/settings'
     | '/_authenticated/team'
+    | '/_authenticated/templates'
     | '/_authenticated/view-as/$repId'
   fileRoutesById: FileRoutesById
 }
@@ -292,6 +316,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/templates': {
+      id: '/_authenticated/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AuthenticatedTemplatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/team': {
       id: '/_authenticated/team'
@@ -363,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/goals': {
+      id: '/_authenticated/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof AuthenticatedGoalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/earnings': {
       id: '/_authenticated/earnings'
       path: '/earnings'
@@ -422,6 +460,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDigestRoute: typeof AuthenticatedDigestRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
+  AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedLeadLogsRoute: typeof AuthenticatedLeadLogsRoute
@@ -432,6 +471,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
+  AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
   AuthenticatedViewAsRepIdRoute: typeof AuthenticatedViewAsRepIdRoute
 }
 
@@ -442,6 +482,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDigestRoute: AuthenticatedDigestRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
+  AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedLeadLogsRoute: AuthenticatedLeadLogsRoute,
@@ -452,6 +493,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
+  AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
   AuthenticatedViewAsRepIdRoute: AuthenticatedViewAsRepIdRoute,
 }
 

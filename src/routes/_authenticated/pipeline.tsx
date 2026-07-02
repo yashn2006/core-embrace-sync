@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye, EyeOff, Users, Search, SlidersHorizontal, X } from "lucide-react";
@@ -24,6 +24,9 @@ export const Route = createFileRoute("/_authenticated/pipeline")({
 function PipelinePage() {
   const { role, user } = useAuth();
   const isOwner = role === "owner";
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const bottomScrollRef = useRef<HTMLDivElement>(null);
+  const [contentWidth, setContentWidth] = useState(0);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [dialog, setDialog] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
@@ -46,6 +49,25 @@ function PipelinePage() {
     } catch (e: any) { toast.error(e.message); }
   }
   useEffect(() => { refresh(); }, []);
+
+  // Keep top/bottom scroll bars in sync and measure content width for the proxy.
+  useEffect(() => {
+    const top = topScrollRef.current, bottom = bottomScrollRef.current;
+    if (!top || !bottom) return;
+    const syncFromTop = () => { bottom.scrollLeft = top.scrollLeft; };
+    const syncFromBottom = () => { top.scrollLeft = bottom.scrollLeft; };
+    top.addEventListener("scroll", syncFromTop, { passive: true });
+    bottom.addEventListener("scroll", syncFromBottom, { passive: true });
+    const measure = () => setContentWidth(bottom.scrollWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(bottom);
+    return () => {
+      top.removeEventListener("scroll", syncFromTop);
+      bottom.removeEventListener("scroll", syncFromBottom);
+      ro.disconnect();
+    };
+  }, [leads.length]);
 
   const filteredLeads = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -184,7 +206,12 @@ function PipelinePage() {
           </div>
         }
       />
-      <div className="p-4 md:p-6 overflow-x-auto">
+      <div className="p-4 md:p-6">
+        {/* Top horizontal scrollbar proxy (mirrors the board below) */}
+        <div ref={topScrollRef} className="overflow-x-auto overflow-y-hidden mb-2 h-3">
+          <div style={{ width: contentWidth || "100%", height: 1 }} />
+        </div>
+        <div ref={bottomScrollRef} className="overflow-x-auto">
         <DndContext sensors={sensors} onDragStart={(e) => setDragId(String(e.active.id))} onDragEnd={onDragEnd} onDragCancel={() => setDragId(null)}>
           <div className="flex gap-3 min-w-max pb-4">
             {visibleStages.map((s) => {
@@ -203,6 +230,7 @@ function PipelinePage() {
             {activeLead && <Card lead={activeLead} profiles={profiles} dragging />}
           </DragOverlay>
         </DndContext>
+        </div>
       </div>
 
       <LeadDialog open={dialog.open} onOpenChange={(v) => setDialog({ open: v, lead: v ? dialog.lead : null })} lead={dialog.lead} profiles={profiles} isOwner={isOwner} onSaved={refresh} />

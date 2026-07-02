@@ -12,6 +12,8 @@ import { LeadChatPanel } from "./lead-chat-panel";
 import { WonDialog, LostDialog } from "./won-lost-dialog";
 import { QuickStatusBar } from "./quick-status-bar";
 import { AiAssistPanel } from "./ai-assist-panel";
+import { TagsEditor } from "./tags-editor";
+import { DuplicateBanner } from "./duplicate-banner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/leads";
@@ -20,15 +22,19 @@ import { useAuth } from "@/hooks/use-auth";
 export function LeadDetailSheet({
   lead,
   profiles,
+  allLeads,
   onClose,
   onEdit,
   onChanged,
+  onOpenLead,
 }: {
   lead: Lead | null;
   profiles: Profile[];
+  allLeads?: Lead[];
   onClose: () => void;
   onEdit: (l: Lead) => void;
   onChanged: () => void;
+  onOpenLead?: (l: Lead) => void;
 }) {
   const { user } = useAuth();
   const [wonOpen, setWonOpen] = useState(false);
@@ -40,6 +46,7 @@ export function LeadDetailSheet({
   if (!lead) return null;
   const currentStatus = (lead as any).custom_status ?? "";
   const currentProgress = (lead as any).progress ?? 0;
+  const currentTags: string[] = ((lead as any).tags ?? []) as string[];
   const owner = profiles.find((p) => p.id === lead.assigned_to);
   const creator = profiles.find((p) => p.id === lead.created_by);
   const stageAccent = STAGE_ACCENT[lead.stage as StageKey];
@@ -104,6 +111,11 @@ export function LeadDetailSheet({
                     {currentStatus}
                   </span>
                 )}
+                {currentTags.map((t) => (
+                  <span key={t} className="inline-flex items-center rounded-full bg-muted text-foreground/80 text-[10px] font-medium px-2 py-0.5">
+                    #{t}
+                  </span>
+                ))}
               </div>
 
               <div className="grid grid-cols-2 gap-3 mt-4">
@@ -197,6 +209,16 @@ export function LeadDetailSheet({
                   </div>
                 </div>
               </div>
+
+              <div className="mt-3">
+                <TagsEditor leadId={lead.id} value={currentTags} onChanged={onChanged} />
+              </div>
+
+              {allLeads && allLeads.length > 0 && (
+                <div className="mt-3">
+                  <DuplicateBanner lead={lead} all={allLeads} onOpen={(l) => onOpenLead?.(l)} />
+                </div>
+              )}
             </SheetHeader>
           </div>
 

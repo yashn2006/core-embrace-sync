@@ -400,3 +400,79 @@ function ConversionTrend({ trend, maxTrendCount }: { trend: Array<{ start: Date;
     </div>
   );
 }
+
+function SalesFocusBlock({ focus }: { focus: NonNullable<ReturnType<typeof buildFocusStub>> }) {
+  const { streak, momentum, monthWon, monthWonValue, rank, boardSize, leader, focus: leads } = focus;
+  const isTop = rank === 1;
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-3 animate-reveal">
+      <div className="surface p-5 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ background: "var(--gradient-magenta)" }} />
+        <div className="flex items-center gap-2 mb-4 relative">
+          <Rocket className="h-3.5 w-3.5 text-primary" />
+          <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Today's mission — top 3 to close</div>
+        </div>
+        {leads.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">Inbox zero. Add a lead or wait for the owner to assign one. 🎯</div>
+        ) : (
+          <div className="space-y-2 relative">
+            {leads.map(({ lead, overdueDays, staleDays }, i) => (
+              <RouterLink key={lead.id} to="/leads" search={{ q: lead.name, stage: "all", owner: "all" }}
+                className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-muted/60 border border-hairline transition-all hover:shadow-sm hover:-translate-y-px group">
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: "var(--gradient-magenta)" }}>{i + 1}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{lead.name}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {lead.company ?? STAGE_LABEL[lead.stage as StageKey]}
+                    {overdueDays > 0 && <span className="ml-1.5 text-destructive">· {overdueDays}d overdue</span>}
+                    {overdueDays === 0 && staleDays > 3 && <span className="ml-1.5 text-amber-600">· cold {staleDays}d</span>}
+                  </div>
+                </div>
+                {lead.deal_value != null && <div className="text-xs tabular font-semibold text-primary shrink-0">{formatCurrency(lead.deal_value)}</div>}
+              </RouterLink>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="surface p-4 flex flex-col justify-between relative overflow-hidden">
+          <div className="flex items-center gap-1.5"><Flame className={"h-3.5 w-3.5 " + (streak > 0 ? "text-orange-500" : "text-muted-foreground")} /><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Streak</div></div>
+          <div>
+            <div className="text-3xl font-semibold tabular">{streak}<span className="text-sm text-muted-foreground ml-1">day{streak === 1 ? "" : "s"}</span></div>
+            <div className="text-[10px] text-muted-foreground">of activity</div>
+          </div>
+        </div>
+        <div className="surface p-4 flex flex-col justify-between">
+          <div className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary" /><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Momentum</div></div>
+          <div>
+            <div className="text-3xl font-semibold tabular">{momentum}<span className="text-sm text-muted-foreground">%</span></div>
+            <div className="h-1 rounded-full bg-muted mt-1 overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${momentum}%`, background: "var(--gradient-magenta)" }} /></div>
+          </div>
+        </div>
+        <div className="surface p-4 col-span-2 flex items-center gap-3">
+          <div className={"h-11 w-11 rounded-full flex items-center justify-center shrink-0 " + (isTop ? "text-white" : "bg-muted text-muted-foreground")} style={isTop ? { background: "var(--gradient-magenta)" } : undefined}>
+            {isTop ? <Crown className="h-5 w-5" /> : <span className="text-sm font-bold tabular">#{rank || "—"}</span>}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">This month</div>
+            <div className="text-sm font-medium">{monthWon} win{monthWon === 1 ? "" : "s"} · {formatCurrency(monthWonValue)}</div>
+            <div className="text-[11px] text-muted-foreground truncate">
+              {isTop ? "🏆 You're leading the team" : leader && leader.count > 0 ? `Leader: ${leader.name} · ${leader.count} wins` : "Be the first to score this month"}
+            </div>
+          </div>
+          <div className="text-[10px] tabular text-muted-foreground shrink-0">{rank}/{boardSize}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// helper type carrier — never called, only for typing SalesFocusBlock props
+function buildFocusStub() {
+  return null as null | {
+    streak: number; momentum: number; monthWon: number; monthWonValue: number;
+    rank: number; boardSize: number;
+    leader: { id: string; name: string; count: number; value: number } | undefined;
+    focus: Array<{ lead: Lead; score: number; overdueDays: number; staleDays: number }>;
+  };
+}

@@ -18,6 +18,7 @@ import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedLeadLogsRouteImport } from './routes/_authenticated/lead-logs'
+import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 
@@ -65,6 +66,11 @@ const AuthenticatedLeadLogsRoute = AuthenticatedLeadLogsRouteImport.update({
   path: '/lead-logs',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/health': typeof AuthenticatedHealthRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/health': typeof AuthenticatedHealthRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/meetings': typeof AuthenticatedMeetingsRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/chat'
     | '/dashboard'
+    | '/health'
     | '/lead-logs'
     | '/leads'
     | '/meetings'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/chat'
     | '/dashboard'
+    | '/health'
     | '/lead-logs'
     | '/leads'
     | '/meetings'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
+    | '/_authenticated/health'
     | '/_authenticated/lead-logs'
     | '/_authenticated/leads'
     | '/_authenticated/meetings'
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeadLogsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/health': {
+      id: '/_authenticated/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof AuthenticatedHealthRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -245,6 +264,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeadLogsRoute: typeof AuthenticatedLeadLogsRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRoute
@@ -256,6 +276,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeadLogsRoute: AuthenticatedLeadLogsRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedMeetingsRoute: AuthenticatedMeetingsRoute,

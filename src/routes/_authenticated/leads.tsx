@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Upload, X, UserCheck, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, Trash2, Upload, X, UserCheck, Sparkles, SlidersHorizontal, KanbanSquare, Undo2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,7 @@ function LeadsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAssignee, setBulkAssignee] = useState<string>("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkStage, setBulkStage] = useState<string>("");
 
   const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
     navigate({ search: (prev: { q: string; stage: string; owner: string }) => ({ ...prev, ...patch }), replace: true });
@@ -127,10 +128,47 @@ function LeadsPage() {
     setBulkBusy(true);
     try {
       const ids = Array.from(selected);
+      const before = leads.filter((l) => ids.includes(l.id)).map((l) => ({ id: l.id, assigned_to: l.assigned_to }));
       const { error } = await supabase.from("leads").update({ assigned_to: bulkAssignee }).in("id", ids);
       if (error) throw error;
-      toast.success(`Reassigned ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${nameOf(bulkAssignee)}`);
+      toast.success(`Reassigned ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${nameOf(bulkAssignee)}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await Promise.all(before.map((b) => supabase.from("leads").update({ assigned_to: b.assigned_to }).eq("id", b.id)));
+              toast.success("Undone");
+              refresh();
+            } catch (e: any) { toast.error(e.message); }
+          },
+        },
+        duration: 8000,
+      });
       setSelected(new Set()); setBulkAssignee(""); refresh();
+    } catch (e: any) { toast.error(e.message); } finally { setBulkBusy(false); }
+  }
+  async function bulkChangeStage() {
+    if (!bulkStage || selected.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selected);
+      const before = leads.filter((l) => ids.includes(l.id)).map((l) => ({ id: l.id, stage: l.stage }));
+      const { error } = await supabase.from("leads").update({ stage: bulkStage as any }).in("id", ids);
+      if (error) throw error;
+      toast.success(`Moved ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${STAGE_LABEL[bulkStage as StageKey] ?? bulkStage}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await Promise.all(before.map((b) => supabase.from("leads").update({ stage: b.stage }).eq("id", b.id)));
+              toast.success("Undone");
+              refresh();
+            } catch (e: any) { toast.error(e.message); }
+          },
+        },
+        duration: 8000,
+      });
+      setSelected(new Set()); setBulkStage(""); refresh();
     } catch (e: any) { toast.error(e.message); } finally { setBulkBusy(false); }
   }
   async function bulkDelete() {
@@ -276,11 +314,21 @@ function LeadsPage() {
             <Button size="sm" onClick={bulkReassign} disabled={!bulkAssignee || bulkBusy}>
               <UserCheck className="h-3.5 w-3.5 mr-1.5" />Reassign
             </Button>
+            <span className="text-xs text-muted-foreground ml-2">Move to</span>
+            <Select value={bulkStage} onValueChange={setBulkStage}>
+              <SelectTrigger className="h-8 w-[150px]"><SelectValue placeholder="Pick a stage" /></SelectTrigger>
+              <SelectContent>
+                {STAGES.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={bulkChangeStage} disabled={!bulkStage || bulkBusy}>
+              <KanbanSquare className="h-3.5 w-3.5 mr-1.5" />Move
+            </Button>
             <Button size="sm" variant="destructive" onClick={bulkDelete} disabled={bulkBusy}>
               <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="ml-auto">
-              <X className="h-3.5 w-3.5 mr-1" />Clear
+              <Undo2 className="h-3.5 w-3.5 mr-1" />Clear selection
             </Button>
           </div>
         )}

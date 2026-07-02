@@ -153,7 +153,7 @@ function TeamPage() {
 
 function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (v: boolean) => void; onCreated: (created: { id: string; name: string; role: "owner" | "rep" } | null) => void }) {
   const createFn = useServerFn(adminCreateUser);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "rep" as "owner" | "rep" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", role: "rep" as "owner" | "rep" });
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -163,7 +163,7 @@ function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; on
       const created = await createFn({ data: form });
       toast.success("User created — they can log in now");
       const snapshot = { id: (created as any).id as string, name: form.name, role: form.role };
-      setForm({ name: "", email: "", password: "", role: "rep" });
+      setForm({ name: "", email: "", password: "", phone: "", role: "rep" });
       onOpenChange(false); onCreated(snapshot);
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   }
@@ -175,6 +175,7 @@ function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; on
         <div className="space-y-3">
           <div className="space-y-1.5"><Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Full name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ali Khan" /></div>
           <div className="space-y-1.5"><Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="ali@coreegin.com" /></div>
+          <div className="space-y-1.5"><Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Phone (optional)</Label><Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 98xxxxxxx" /></div>
           <div className="space-y-1.5"><Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Password</Label><Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 8 chars" /></div>
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Role</Label>

@@ -21,7 +21,7 @@ async function assertOwner(userId: string) {
  */
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { email: string; password: string; name: string; role: "owner" | "rep" }) => {
+  .inputValidator((data: { email: string; password: string; name: string; role: "owner" | "rep"; phone?: string }) => {
     if (!data.email || !data.password || !data.name) throw new Error("Missing fields");
     if (data.password.length < 8) throw new Error("Password must be at least 8 characters");
     if (data.role !== "owner" && data.role !== "rep") throw new Error("Invalid role");
@@ -37,7 +37,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       email: data.email,
       password: data.password,
       email_confirm: true,
-      user_metadata: { name: data.name },
+      user_metadata: { name: data.name, phone: data.phone ?? null },
     });
     if (createErr || !created.user) throw new Error(createErr?.message ?? "Failed to create user");
 
@@ -46,7 +46,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     // Profile is auto-created by handle_new_user trigger; upsert to ensure name.
     await supabaseAdmin
       .from("profiles")
-      .upsert({ id: userId, org_id: DEFAULT_ORG_ID, name: data.name, email: data.email }, { onConflict: "id" });
+      .upsert({ id: userId, org_id: DEFAULT_ORG_ID, name: data.name, email: data.email, phone: data.phone ?? null }, { onConflict: "id" });
 
     // Grant role (trigger inserts 'rep' by default; upgrade to owner if requested)
     if (data.role === "owner") {
@@ -55,7 +55,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
         .upsert({ user_id: userId, org_id: DEFAULT_ORG_ID, role: "owner" }, { onConflict: "user_id,role" });
     }
 
-    return { id: userId, email: data.email, name: data.name, role: data.role };
+    return { id: userId, email: data.email, name: data.name, role: data.role, phone: data.phone ?? null };
   });
 
 export const adminDeactivateUser = createServerFn({ method: "POST" })

@@ -83,6 +83,37 @@ export async function updateLeadCustomStatus(id: string, status: string | null) 
   return data;
 }
 
+export async function updateLeadTags(id: string, tags: string[]) {
+  const clean = Array.from(new Set(tags.map((t) => t.trim()).filter(Boolean))).slice(0, 20);
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ tags: clean } as never)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export type DuplicateMatch = { lead: Lead; reason: "email" | "phone" | "name+company" };
+
+export function findDuplicates(target: Lead, all: Lead[]): DuplicateMatch[] {
+  const out: DuplicateMatch[] = [];
+  const email = target.email?.trim().toLowerCase();
+  const phone = target.phone?.replace(/\D/g, "");
+  const nameKey = target.name?.trim().toLowerCase();
+  const companyKey = target.company?.trim().toLowerCase();
+  for (const l of all) {
+    if (l.id === target.id) continue;
+    if (email && l.email?.trim().toLowerCase() === email) { out.push({ lead: l, reason: "email" }); continue; }
+    if (phone && phone.length >= 7 && l.phone?.replace(/\D/g, "") === phone) { out.push({ lead: l, reason: "phone" }); continue; }
+    if (nameKey && companyKey && l.name?.trim().toLowerCase() === nameKey && l.company?.trim().toLowerCase() === companyKey) {
+      out.push({ lead: l, reason: "name+company" });
+    }
+  }
+  return out.slice(0, 5);
+}
+
 export async function deleteLead(id: string) {
   const { error } = await supabase.from("leads").delete().eq("id", id);
   if (error) throw error;

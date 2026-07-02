@@ -1,13 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateText } from "ai";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { resolveAiProvider } from "./ai-gateway.server";
 
 export const aiWeeklyDigest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured");
     const { supabase, userId } = context;
 
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
@@ -63,7 +61,7 @@ Tone: direct, no fluff. Data:
 
 ${summary}`;
 
-    const gateway = createLovableAiGatewayProvider(key);
-    const { text } = await generateText({ model: gateway("google/gemini-3-flash-preview"), prompt });
+    const ai = await resolveAiProvider();
+    const { text } = await generateText({ model: ai.make(), prompt });
     return { text, stats: { totalNew, totalWon, totalWonValue, totalLost, reps: ranked } };
   });

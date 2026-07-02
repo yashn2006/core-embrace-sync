@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { resolveAiProvider } from "./ai-gateway.server";
 
 const Kind = z.enum(["draft_reply", "summarize", "next_step"]);
 const Input = z.object({ leadId: z.string().uuid(), kind: Kind, tone: z.string().optional() });
@@ -11,8 +11,6 @@ export const aiLeadAssist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => Input.parse(raw))
   .handler(async ({ data, context }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured");
     const { supabase } = context;
 
     const { data: lead, error: leadErr } = await supabase
@@ -49,10 +47,7 @@ export const aiLeadAssist = createServerFn({ method: "POST" })
       next_step: `Suggest the single best next step to move this lead forward. Include (1) the action, (2) when to do it, (3) exact talking point in 1 sentence. Reply as a compact plan, no fluff.\n\n${context_text}`,
     };
 
-    const gateway = createLovableAiGatewayProvider(key);
-    const { text } = await generateText({
-      model: gateway("google/gemini-3-flash-preview"),
-      prompt: prompts[data.kind],
-    });
+    const ai = await resolveAiProvider();
+    const { text } = await generateText({ model: ai.make(), prompt: prompts[data.kind] });
     return { text };
   });

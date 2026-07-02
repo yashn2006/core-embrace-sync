@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { resolveAiProvider } from "./ai-gateway.server";
 
 const Input = z.object({ repId: z.string().uuid() });
 
@@ -10,8 +10,6 @@ export const aiRepCoach = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => Input.parse(raw))
   .handler(async ({ data, context }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured");
     const { supabase, userId } = context;
 
     // owner-only gate
@@ -71,11 +69,8 @@ export const aiRepCoach = createServerFn({ method: "POST" })
 Data:
 ${summary}`;
 
-    const gateway = createLovableAiGatewayProvider(key);
-    const { text } = await generateText({
-      model: gateway("google/gemini-3-flash-preview"),
-      prompt,
-    });
+    const ai = await resolveAiProvider();
+    const { text } = await generateText({ model: ai.make(), prompt });
 
     return {
       text,

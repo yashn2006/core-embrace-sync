@@ -33,6 +33,7 @@ const searchSchema = z.object({
   pmin: fallback(z.string(), "").default(""),
   cstatus: fallback(z.string(), "any").default("any"), // any | with | without
   sort: fallback(z.string(), "updated").default("updated"), // updated | value | progress | name
+  tag: fallback(z.string(), "all").default("all"),
 });
 
 export const Route = createFileRoute("/_authenticated/leads")({
@@ -86,6 +87,8 @@ function LeadsPage() {
       const cs = (l as any).custom_status;
       if (search.cstatus === "with" && !cs) return false;
       if (search.cstatus === "without" && cs) return false;
+      const lTags: string[] = ((l as any).tags ?? []) as string[];
+      if (search.tag !== "all" && !lTags.includes(search.tag)) return false;
       if (t && ![l.name, l.company, l.email, l.phone, l.description].some((v) => v?.toLowerCase().includes(t))) return false;
       return true;
     });
@@ -99,9 +102,14 @@ function LeadsPage() {
     return arr;
   }, [leads, search]);
 
-  const advCount = (search.vmin ? 1 : 0) + (search.vmax ? 1 : 0) + (search.pmin ? 1 : 0) + (search.cstatus !== "any" ? 1 : 0) + (search.sort !== "updated" ? 1 : 0);
+  const advCount = (search.vmin ? 1 : 0) + (search.vmax ? 1 : 0) + (search.pmin ? 1 : 0) + (search.cstatus !== "any" ? 1 : 0) + (search.sort !== "updated" ? 1 : 0) + (search.tag !== "all" ? 1 : 0);
   const activeFilters = (search.stage !== "all" ? 1 : 0) + (search.owner !== "all" ? 1 : 0) + (search.q ? 1 : 0) + advCount;
   const unassignedCount = useMemo(() => leads.filter((l) => !l.assigned_to).length, [leads]);
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const l of leads) for (const t of (((l as any).tags ?? []) as string[])) set.add(t);
+    return Array.from(set).sort();
+  }, [leads]);
 
   const nameOf = (id: string | null) => profiles.find((p) => p.id === id)?.name ?? "—";
 
@@ -286,15 +294,27 @@ function LeadsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {allTags.length > 0 && (
+                <div>
+                  <Label className="text-[10px] uppercase">Tag</Label>
+                  <Select value={search.tag} onValueChange={(v) => setSearch({ tag: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any tag</SelectItem>
+                      {allTags.map((t) => <SelectItem key={t} value={t}>#{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {advCount > 0 && (
-                <Button size="sm" variant="ghost" className="w-full" onClick={() => setSearch({ vmin: "", vmax: "", pmin: "", cstatus: "any", sort: "updated" })}>
+                <Button size="sm" variant="ghost" className="w-full" onClick={() => setSearch({ vmin: "", vmax: "", pmin: "", cstatus: "any", sort: "updated", tag: "all" })}>
                   <X className="h-3.5 w-3.5 mr-1" />Clear advanced
                 </Button>
               )}
             </PopoverContent>
           </Popover>
           {activeFilters > 0 && (
-            <Button size="sm" variant="ghost" onClick={() => setSearch({ q: "", stage: "all", owner: "all", vmin: "", vmax: "", pmin: "", cstatus: "any", sort: "updated" })}>
+            <Button size="sm" variant="ghost" onClick={() => setSearch({ q: "", stage: "all", owner: "all", vmin: "", vmax: "", pmin: "", cstatus: "any", sort: "updated", tag: "all" })}>
               <X className="h-3.5 w-3.5 mr-1" />Clear
             </Button>
           )}
@@ -386,6 +406,16 @@ function LeadsPage() {
                         <span className="truncate max-w-[220px]">{(l as any).custom_status}</span>
                         </span>
                       )}
+                      {(((l as any).tags ?? []) as string[]).slice(0, 3).map((t) => (
+                        <button
+                          key={t}
+                          onClick={(e) => { e.stopPropagation(); setSearch({ tag: t }); }}
+                          className="inline-flex items-center rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-foreground/70 text-[10px] font-medium px-1.5 py-0.5 transition-colors"
+                          title={`Filter by #${t}`}
+                        >
+                          #{t}
+                        </button>
+                      ))}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -433,9 +463,11 @@ function LeadsPage() {
       <LeadDetailSheet
         lead={detail}
         profiles={profiles}
+        allLeads={leads}
         onClose={() => setDetail(null)}
         onEdit={(l) => { setDetail(null); setDialog({ open: true, lead: l }); }}
         onChanged={() => { refresh(); if (detail) listLeads().then((l) => setDetail(l.find((x) => x.id === detail.id) ?? null)); }}
+        onOpenLead={(l) => setDetail(l)}
       />
       <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} profiles={profiles} onDone={refresh} />
       {isOwner && <BulkAssignDialog open={assignOpen} onOpenChange={setAssignOpen} profiles={profiles.filter((p) => p.id)} onDone={refresh} />}

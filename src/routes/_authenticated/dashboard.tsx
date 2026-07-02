@@ -10,6 +10,7 @@ import { Users, TrendingUp, Target, Clock, AlertTriangle, CalendarClock, DollarS
 import { formatDistanceToNow, isPast, isToday, isTomorrow, startOfWeek, addWeeks, format, isAfter, differenceInDays, startOfMonth } from "date-fns";
 import { Link as RouterLink } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { LiveOpsBoard } from "@/components/dashboard/live-ops-board";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — CoreEgin Sales OS" }] }),
@@ -219,6 +220,7 @@ function DashboardPage() {
               <Trophy className="h-3.5 w-3.5 text-primary" />
               <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-medium">Rep performance</div>
             </div>
+          {/* Rep performance list continues below */}
             {repRows.length === 0 && <div className="text-sm text-muted-foreground py-4 text-center">No team members yet.</div>}
             <div className="space-y-4">
               {repRows.map((r, i) => {
@@ -251,6 +253,8 @@ function DashboardPage() {
             </div>
           </div>
         )}
+
+        {isOwner && <LiveOpsBoard />}
 
         {isOwner && (
           <div className="surface p-5 animate-reveal">

@@ -191,7 +191,9 @@ export type Database = {
       }
       leads: {
         Row: {
+          address: string | null
           assigned_to: string | null
+          business_type: string | null
           company: string | null
           created_at: string
           created_by: string | null
@@ -211,10 +213,13 @@ export type Database = {
           source: Database["public"]["Enums"]["lead_source"]
           stage: Database["public"]["Enums"]["lead_stage"]
           updated_at: string
+          website: string | null
           won_at: string | null
         }
         Insert: {
+          address?: string | null
           assigned_to?: string | null
+          business_type?: string | null
           company?: string | null
           created_at?: string
           created_by?: string | null
@@ -234,10 +239,13 @@ export type Database = {
           source?: Database["public"]["Enums"]["lead_source"]
           stage?: Database["public"]["Enums"]["lead_stage"]
           updated_at?: string
+          website?: string | null
           won_at?: string | null
         }
         Update: {
+          address?: string | null
           assigned_to?: string | null
+          business_type?: string | null
           company?: string | null
           created_at?: string
           created_by?: string | null
@@ -257,6 +265,7 @@ export type Database = {
           source?: Database["public"]["Enums"]["lead_source"]
           stage?: Database["public"]["Enums"]["lead_stage"]
           updated_at?: string
+          website?: string | null
           won_at?: string | null
         }
         Relationships: [

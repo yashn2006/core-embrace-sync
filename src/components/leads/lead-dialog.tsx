@@ -27,6 +27,9 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
     email: "",
     phone: "",
     company: "",
+    address: "",
+    business_type: "",
+    website: "",
     description: "",
     source: "website" as SourceKey,
     stage: "new" as StageKey,
@@ -43,6 +46,9 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
         email: lead?.email ?? "",
         phone: lead?.phone ?? "",
         company: lead?.company ?? "",
+        address: (lead as any)?.address ?? "",
+        business_type: (lead as any)?.business_type ?? "",
+        website: (lead as any)?.website ?? "",
         description: lead?.description ?? "",
         source: (lead?.source as SourceKey) ?? "website",
         stage: (lead?.stage as StageKey) ?? "new",
@@ -66,6 +72,9 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         company: form.company.trim() || null,
+        address: form.address.trim() || null,
+        business_type: form.business_type.trim() || null,
+        website: form.website.trim() || null,
         description: form.description.trim() || null,
         source: form.source,
         stage: form.stage,
@@ -108,6 +117,15 @@ export function LeadDialog({ open, onOpenChange, lead, profiles, isOwner, onSave
           </Field>
           <Field label="Phone">
             <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          </Field>
+          <Field label="Business type">
+            <Input value={form.business_type} onChange={(e) => setForm({ ...form, business_type: e.target.value })} placeholder="Cafe, Salon, Retail…" />
+          </Field>
+          <Field label="Website">
+            <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://…" />
+          </Field>
+          <Field label="Address" className="col-span-2">
+            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Street, City, Area, Pincode" />
           </Field>
           <Field label="Source">
             <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v as SourceKey })}>

@@ -18,6 +18,9 @@ const LEAD_FIELDS = [
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
   { key: "company", label: "Company" },
+  { key: "address", label: "Address" },
+  { key: "business_type", label: "Business type" },
+  { key: "website", label: "Website" },
   { key: "description", label: "Description" },
   { key: "deal_value", label: "Deal value" },
 ] as const;
@@ -32,6 +35,9 @@ function guessMapping(headers: string[]): Record<FieldKey, string> {
     else if (!map.email && n.includes("email")) map.email = h;
     else if (!map.phone && /(phone|mobile|whatsapp)/.test(n)) map.phone = h;
     else if (!map.company && /(company|org|business)/.test(n)) map.company = h;
+    else if (!map.address && /(address|location|street|city|area|locality|pincode|zip)/.test(n)) map.address = h;
+    else if (!map.business_type && /(business.?type|industry|category|segment|vertical)/.test(n)) map.business_type = h;
+    else if (!map.website && /(website|url|site|domain)/.test(n)) map.website = h;
     else if (!map.description && /(desc|notes?|details?)/.test(n)) map.description = h;
     else if (!map.deal_value && /(value|amount|budget|deal)/.test(n)) map.deal_value = h;
   }
@@ -130,6 +136,9 @@ export function CsvImportDialog({
           email: email || null,
           phone: mapping.phone ? r[mapping.phone]?.toString().trim() || null : null,
           company: mapping.company ? r[mapping.company]?.toString().trim() || null : null,
+          address: mapping.address ? r[mapping.address]?.toString().trim() || null : null,
+          business_type: mapping.business_type ? r[mapping.business_type]?.toString().trim() || null : null,
+          website: mapping.website ? r[mapping.website]?.toString().trim() || null : null,
           description: mapping.description ? r[mapping.description]?.toString().trim() || null : null,
           deal_value: dv && !Number.isNaN(dv) ? dv : null,
           source,

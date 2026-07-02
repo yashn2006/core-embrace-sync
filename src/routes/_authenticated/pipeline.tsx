@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { listLeads, listProfiles, updateLead, logActivity, formatCurrency, type Lead, type Profile } from "@/lib/leads";
 import { STAGES, ACTIVE_STAGES, STAGE_ACCENT, STAGE_LABEL, type StageKey } from "@/lib/constants";
+import { scoreLead, HEAT_STYLE } from "@/lib/lead-scoring";
 import { LeadDialog } from "@/components/leads/lead-dialog";
 import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet";
 import { WonDialog, LostDialog } from "@/components/leads/won-lost-dialog";
@@ -275,6 +276,8 @@ function DraggableCard({ lead, profiles, onClick }: { lead: Lead; profiles: Prof
 function Card({ lead, profiles, dragging }: { lead: Lead; profiles: Profile[]; dragging?: boolean }) {
   const owner = profiles.find((p) => p.id === lead.assigned_to);
   const accent = STAGE_ACCENT[lead.stage as StageKey];
+  const heat = scoreLead(lead);
+  const heatStyle = HEAT_STYLE[heat.heat];
   return (
     <div className={"relative rounded-lg border border-hairline bg-card p-3 hover:border-primary/30 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all " + (dragging ? "shadow-[var(--shadow-lift)] rotate-1" : "")}>
       <span className={"absolute left-0 top-2 bottom-2 w-0.5 rounded-r " + accent.dot} aria-hidden />
@@ -284,6 +287,11 @@ function Card({ lead, profiles, dragging }: { lead: Lead; profiles: Profile[]; d
           {lead.company && <div className="text-xs text-muted-foreground truncate">{lead.company}</div>}
         </div>
         {lead.deal_value != null && <div className="text-xs font-medium tabular text-primary shrink-0">{formatCurrency(lead.deal_value)}</div>}
+      </div>
+      <div className="mt-2 flex items-center gap-1">
+        <span title={heat.reasons.join(" · ") || "Lead heat"} className={"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium " + heatStyle.className}>
+          <span>{heatStyle.emoji}</span>{heatStyle.label}
+        </span>
       </div>
       {lead.custom_status && (
         <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium rounded-md bg-primary/10 text-primary px-1.5 py-0.5 max-w-full">

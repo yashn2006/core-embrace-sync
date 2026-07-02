@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.leads_auto_commission() FROM PUBLIC, anon, authenticated;

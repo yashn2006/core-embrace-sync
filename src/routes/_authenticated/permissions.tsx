@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, ShieldOff, RefreshCw, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, ShieldOff, RefreshCw, CheckCircle2, Eye } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminUsers } from "@/lib/diagnostics.functions";
@@ -115,6 +115,12 @@ function PermissionsPage() {
                       {r.is_active ? <span className="text-xs text-success">Active</span> : <span className="text-xs text-muted-foreground flex items-center gap-1"><ShieldOff className="h-3 w-3" />Inactive</span>}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5">
+                      <Link to="/view-as/$repId" params={{ repId: r.id }}>
+                        <Button size="sm" variant="outline" className="h-8 text-xs">
+                          <Eye className="h-3 w-3 mr-1" />View as
+                        </Button>
+                      </Link>
                       <Select
                         value={r.role}
                         disabled={saving === r.id}
@@ -124,12 +130,13 @@ function PermissionsPage() {
                           }
                         }}
                       >
-                        <SelectTrigger className="h-8 w-[180px]"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="rep">Rep — only own leads</SelectItem>
                           <SelectItem value="owner">Owner — full access</SelectItem>
                         </SelectContent>
                       </Select>
+                      </div>
                     </TableCell>
                   </TableRow>
                   {expanded === r.id && (

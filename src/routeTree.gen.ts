@@ -16,12 +16,15 @@ import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/t
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedPermissionsRouteImport } from './routes/_authenticated/permissions'
+import { Route as AuthenticatedPayoutsRouteImport } from './routes/_authenticated/payouts'
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedLeadLogsRouteImport } from './routes/_authenticated/lead-logs'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
+import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedViewAsRepIdRouteImport } from './routes/_authenticated/view-as.$repId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -58,6 +61,11 @@ const AuthenticatedPermissionsRoute =
     path: '/permissions',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPayoutsRoute = AuthenticatedPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeetingsRoute = AuthenticatedMeetingsRouteImport.update({
   id: '/meetings',
   path: '/meetings',
@@ -78,6 +86,11 @@ const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
   path: '/health',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -88,34 +101,46 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedViewAsRepIdRoute =
+  AuthenticatedViewAsRepIdRouteImport.update({
+    id: '/view-as/$repId',
+    path: '/view-as/$repId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
+  '/payouts': typeof AuthenticatedPayoutsRoute
   '/permissions': typeof AuthenticatedPermissionsRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/view-as/$repId': typeof AuthenticatedViewAsRepIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
+  '/payouts': typeof AuthenticatedPayoutsRoute
   '/permissions': typeof AuthenticatedPermissionsRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/view-as/$repId': typeof AuthenticatedViewAsRepIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,14 +149,17 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/lead-logs': typeof AuthenticatedLeadLogsRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/meetings': typeof AuthenticatedMeetingsRoute
+  '/_authenticated/payouts': typeof AuthenticatedPayoutsRoute
   '/_authenticated/permissions': typeof AuthenticatedPermissionsRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_authenticated/view-as/$repId': typeof AuthenticatedViewAsRepIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,28 +168,34 @@ export interface FileRouteTypes {
     | '/auth'
     | '/chat'
     | '/dashboard'
+    | '/earnings'
     | '/health'
     | '/lead-logs'
     | '/leads'
     | '/meetings'
+    | '/payouts'
     | '/permissions'
     | '/pipeline'
     | '/settings'
     | '/team'
+    | '/view-as/$repId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/chat'
     | '/dashboard'
+    | '/earnings'
     | '/health'
     | '/lead-logs'
     | '/leads'
     | '/meetings'
+    | '/payouts'
     | '/permissions'
     | '/pipeline'
     | '/settings'
     | '/team'
+    | '/view-as/$repId'
   id:
     | '__root__'
     | '/'
@@ -169,14 +203,17 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
+    | '/_authenticated/earnings'
     | '/_authenticated/health'
     | '/_authenticated/lead-logs'
     | '/_authenticated/leads'
     | '/_authenticated/meetings'
+    | '/_authenticated/payouts'
     | '/_authenticated/permissions'
     | '/_authenticated/pipeline'
     | '/_authenticated/settings'
     | '/_authenticated/team'
+    | '/_authenticated/view-as/$repId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -236,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPermissionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payouts': {
+      id: '/_authenticated/payouts'
+      path: '/payouts'
+      fullPath: '/payouts'
+      preLoaderRoute: typeof AuthenticatedPayoutsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meetings': {
       id: '/_authenticated/meetings'
       path: '/meetings'
@@ -264,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/earnings': {
+      id: '/_authenticated/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof AuthenticatedEarningsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -278,33 +329,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/view-as/$repId': {
+      id: '/_authenticated/view-as/$repId'
+      path: '/view-as/$repId'
+      fullPath: '/view-as/$repId'
+      preLoaderRoute: typeof AuthenticatedViewAsRepIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeadLogsRoute: typeof AuthenticatedLeadLogsRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRoute
+  AuthenticatedPayoutsRoute: typeof AuthenticatedPayoutsRoute
   AuthenticatedPermissionsRoute: typeof AuthenticatedPermissionsRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
+  AuthenticatedViewAsRepIdRoute: typeof AuthenticatedViewAsRepIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeadLogsRoute: AuthenticatedLeadLogsRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedMeetingsRoute: AuthenticatedMeetingsRoute,
+  AuthenticatedPayoutsRoute: AuthenticatedPayoutsRoute,
   AuthenticatedPermissionsRoute: AuthenticatedPermissionsRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
+  AuthenticatedViewAsRepIdRoute: AuthenticatedViewAsRepIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -318,13 +382,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -83,6 +83,74 @@ export type Database = {
         }
         Relationships: []
       }
+      commissions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          currency: string
+          deal_value: number
+          id: string
+          lead_id: string
+          notes: string | null
+          org_id: string
+          paid_at: string | null
+          paid_by: string | null
+          rep_id: string
+          status: string
+          updated_at: string
+          voided_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          currency?: string
+          deal_value?: number
+          id?: string
+          lead_id: string
+          notes?: string | null
+          org_id: string
+          paid_at?: string | null
+          paid_by?: string | null
+          rep_id: string
+          status?: string
+          updated_at?: string
+          voided_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          currency?: string
+          deal_value?: number
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          org_id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          rep_id?: string
+          status?: string
+          updated_at?: string
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_batches: {
         Row: {
           assigned_to: string | null

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, ShieldCheck, ShieldOff, Sparkles, UserCheck } from "lucide-react";
+import { UserPlus, ShieldCheck, ShieldOff, Sparkles, UserCheck, FileDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,6 +16,7 @@ import { adminCreateUser, adminSetRole, adminDeactivateUser } from "@/lib/admin.
 import { toast } from "sonner";
 import { BulkAssignDialog } from "@/components/leads/bulk-assign-dialog";
 import { listLeads, type Profile } from "@/lib/leads";
+import { generateRepReport } from "@/lib/rep-report";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({ meta: [{ title: "Team — CoreEgin Sales OS" }] }),
@@ -117,6 +118,14 @@ function TeamPage() {
                     {m.role === "rep" && (
                       <Button size="sm" variant="ghost" onClick={() => setAssign({ open: true, repId: m.id, repName: m.name })}>
                         <UserCheck className="h-3.5 w-3.5 mr-1" />Assign leads
+                      </Button>
+                    )}
+                    {m.role === "rep" && (
+                      <Button size="sm" variant="ghost" onClick={async () => {
+                        try { await generateRepReport(m.id, m.name); toast.success("Report downloaded"); }
+                        catch (e: any) { toast.error(e.message); }
+                      }}>
+                        <FileDown className="h-3.5 w-3.5 mr-1" />PDF report
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" onClick={() => toggleRole(m)}><ShieldCheck className="h-3.5 w-3.5 mr-1" />Make {m.role === "owner" ? "rep" : "owner"}</Button>

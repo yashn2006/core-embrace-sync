@@ -114,7 +114,7 @@ function InboxPage() {
             <Link
               key={l.id}
               to="/leads"
-              search={(prev) => ({ ...(prev as object), q: l.name }) as never}
+              search={((prev: Record<string, unknown>) => ({ ...prev, q: l.name })) as never}
               className="flex items-center gap-3 p-3 md:p-4 hover:bg-muted/40 transition-colors"
             >
               <div className="min-w-0 flex-1">

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, XCircle, Pencil, Building2, Mail, Phone, Calendar, User, Tag, Check } from "lucide-react";
+import { Trophy, XCircle, Pencil, Building2, Mail, Phone, Calendar, User, Tag, Check, MapPin, Briefcase, Globe } from "lucide-react";
 import { formatCurrency, updateLead, updateLeadCustomStatus, updateLeadProgress, type Lead, type Profile } from "@/lib/leads";
 import { STAGE_LABEL, STAGES, STAGE_ACCENT, type StageKey } from "@/lib/constants";
 import { ActivityTimeline } from "./activity-timeline";
@@ -108,6 +108,9 @@ export function LeadDetailSheet({
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {lead.email && <InfoRow icon={Mail} label="Email" value={lead.email} />}
                 {lead.phone && <InfoRow icon={Phone} label="Phone" value={lead.phone} />}
+                {(lead as any).business_type && <InfoRow icon={Briefcase} label="Type" value={(lead as any).business_type} />}
+                {(lead as any).website && <InfoRow icon={Globe} label="Website" value={(lead as any).website} />}
+                {(lead as any).address && <InfoRow icon={MapPin} label="Address" value={(lead as any).address} />}
                 {owner && <InfoRow icon={User} label="Owner" value={owner.name} />}
                 {creator && creator.id !== owner?.id && <InfoRow icon={User} label="Sourced by" value={creator.name} />}
               </div>
@@ -211,6 +214,9 @@ export function LeadDetailSheet({
                 <LeadChatPanel leadId={lead.id} leadName={lead.name} profiles={profiles} />
               </TabsContent>
               <TabsContent value="details" className="mt-4 space-y-3 text-sm">
+                {(lead as any).address && <DetailLine k="Address" v={(lead as any).address} />}
+                {(lead as any).business_type && <DetailLine k="Business type" v={(lead as any).business_type} />}
+                {(lead as any).website && <DetailLine k="Website" v={(lead as any).website} />}
                 <DetailLine k="Description" v={lead.description ?? "—"} />
                 <DetailLine k="Next follow-up" v={lead.next_follow_up ? new Date(lead.next_follow_up).toLocaleString() : "—"} />
                 <DetailLine k="Created" v={new Date(lead.created_at).toLocaleString()} />

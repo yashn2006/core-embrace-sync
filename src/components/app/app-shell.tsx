@@ -20,9 +20,6 @@ const NAV = [
   { to: "/chat", label: "Chat", icon: MessageSquare },
 ] as const;
 
-const OWNER_EXTRA = [
-  { to: "/audit", label: "Audit log", icon: ShieldCheck },
-] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { role, user, signOut } = useAuth();

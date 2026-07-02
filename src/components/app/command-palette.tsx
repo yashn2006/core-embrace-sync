@@ -53,7 +53,12 @@ export function CommandPalette() {
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onOpenEvt = () => setOpen(true);
+    window.addEventListener("coreegin:open-command", onOpenEvt);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("coreegin:open-command", onOpenEvt);
+    };
   }, []);
 
   // Search leads (debounced)

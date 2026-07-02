@@ -25,7 +25,7 @@ export const aiLeadAssist = createServerFn({ method: "POST" })
 
     const { data: activities } = await supabase
       .from("activities")
-      .select("type,outcome,note,created_at")
+      .select("type,outcome,created_at")
       .eq("lead_id", data.leadId)
       .order("created_at", { ascending: false })
       .limit(15);
@@ -40,7 +40,7 @@ export const aiLeadAssist = createServerFn({ method: "POST" })
       lead.description ? `Notes: ${lead.description}` : "",
       "",
       "Recent activity:",
-      ...(activities ?? []).map((a) => `- [${a.type}] ${a.outcome ?? ""} ${a.note ?? ""}`.trim()),
+      ...(activities ?? []).map((a) => `- [${a.type}] ${a.outcome ?? ""}`.trim()),
     ].filter(Boolean).join("\n");
 
     const prompts: Record<z.infer<typeof Kind>, string> = {
